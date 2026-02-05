@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+// The List Select - Curatoriale
 import Home from './pages/Home';
 import PlaceDetails from './pages/PlaceDetails';
 import Blog from './pages/Blog';
