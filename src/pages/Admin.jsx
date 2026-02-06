@@ -118,6 +118,10 @@ const Admin = () => {
                     </div>
                     <input placeholder="URL Immagine Hero" value={formData.hero_image} onChange={e => setFormData({ ...formData, hero_image: e.target.value })} style={{ background: '#1A1A1A', border: '1px solid #333', color: 'white', padding: '0.8rem' }} />
                     <textarea placeholder="Micro-descrizione editoriale" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ background: '#1A1A1A', border: '1px solid #333', color: 'white', padding: '0.8rem', minHeight: '100px' }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
+                        <input placeholder="Latitude (es: 45.4642)" type="number" step="any" value={formData.latitude} onChange={e => setFormData({ ...formData, latitude: e.target.value })} style={{ background: '#1A1A1A', border: '1px solid #333', color: 'white', padding: '0.8rem' }} />
+                        <input placeholder="Longitude (es: 9.1900)" type="number" step="any" value={formData.longitude} onChange={e => setFormData({ ...formData, longitude: e.target.value })} style={{ background: '#1A1A1A', border: '1px solid #333', color: 'white', padding: '0.8rem' }} />
+                    </div>
                     <input placeholder="Google Maps URL" value={formData.maps_url} onChange={e => setFormData({ ...formData, maps_url: e.target.value })} style={{ background: '#1A1A1A', border: '1px solid #333', color: 'white', padding: '0.8rem' }} />
                     <button className="luxury-button" type="submit" style={{ marginTop: '1rem' }}>
                         <Plus size={18} /> Aggiungi alla Lista

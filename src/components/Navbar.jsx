@@ -3,19 +3,29 @@ import { Link } from 'react-router-dom';
 const Navbar = () => {
     return (
         <nav style={{
-            padding: '2rem 1.5rem',
+            padding: '3rem 0',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            position: 'sticky',
+            position: 'absolute',
             top: 0,
-            backgroundColor: 'rgba(10, 10, 10, 0.9)',
-            backdropFilter: 'blur(10px)',
-            zIndex: 100
+            left: 0,
+            right: 0,
+            zIndex: 100,
+            pointerEvents: 'none'
         }}>
-            <Link to="/" style={{ letterSpacing: '0.2em', fontSize: '1.2rem' }} className="serif">
-                THE LIST SELECT
-            </Link>
+            <div style={{ display: 'flex', gap: '3rem', alignItems: 'center', pointerEvents: 'auto' }}>
+                <Link to="/editorial" style={{ letterSpacing: '0.2rem', fontSize: '0.65rem', textTransform: 'uppercase', opacity: 0.5 }}>Journal</Link>
+                <Link to="/" style={{
+                    letterSpacing: '0.4em',
+                    fontSize: '0.8rem',
+                    textTransform: 'uppercase',
+                    opacity: 1
+                }} className="serif">
+                    THE LIST SELECT
+                </Link>
+                <Link to="/map" style={{ letterSpacing: '0.2rem', fontSize: '0.65rem', textTransform: 'uppercase', opacity: 0.5 }}>Map</Link>
+            </div>
         </nav>
     );
 };
