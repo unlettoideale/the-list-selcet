@@ -157,13 +157,20 @@ const Auth = () => {
         <div className="app-shell" style={{
             background: 'radial-gradient(circle at center, #5D1219 0%, #1A0406 70%, #0D0203 100%)',
             minHeight: '100vh',
-            justifyContent: 'center'
+            height: '100vh',
+            overflowY: 'auto',
+            display: 'block' // Allow scrolling
         }}>
-            <div className="luxury-container" style={{ padding: '0 2.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '100vh' }}>
+            <div className="luxury-container" style={{
+                padding: '4rem 2.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: 'min-content'
+            }}>
 
 
                 <header style={{
-                    marginBottom: view === 'login' ? '5rem' : '3rem',
+                    marginBottom: view === 'login' ? '3rem' : '1.5rem',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center'

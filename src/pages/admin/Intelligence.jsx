@@ -104,7 +104,7 @@ const Intelligence = () => {
                 <section>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
                         <h3 className="serif" style={{ fontSize: '1.6rem', color: '#1A0406' }}>Attività Recente</h3>
-                        <Link to="/admin/places" style={{
+                        <Link to="/admin" style={{
                             fontSize: '0.65rem',
                             letterSpacing: '0.15em',
                             textTransform: 'uppercase',

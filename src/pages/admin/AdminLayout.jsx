@@ -8,6 +8,7 @@ const AdminLayout = ({ children }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [user, setUser] = useState(null);
+    const [profile, setProfile] = useState(null);
 
     useEffect(() => {
         const checkAdmin = async () => {
@@ -17,6 +18,15 @@ const AdminLayout = ({ children }) => {
                 return;
             }
             setUser(session.user);
+
+            // Fetch Profile for Permissions
+            const { data: prof } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+
+            setProfile(prof);
         };
         checkAdmin();
     }, [navigate]);
@@ -26,14 +36,36 @@ const AdminLayout = ({ children }) => {
         navigate('/');
     };
 
-    const menuItems = [
-        { label: 'The Vault', icon: MapPin, path: '/admin' },
+    const cleanName = (email) => {
+        if (profile?.first_name) return profile.first_name;
+        if (!email) return 'Curator';
+        const prefix = email.split('@')[0];
+        const nameOnly = prefix.replace(/[0-9]/g, '').replace(/[._-]/g, ' ');
+        return nameOnly.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    };
+
+    const allMenuItems = [
+        { label: 'Gestione Luoghi', icon: MapPin, path: '/admin', key: 'places' },
+        { label: 'Gestione Utenti', icon: Users, path: '/admin/team', key: 'team' },
     ];
 
+    // Filtriamo in base ai permessi salvati nel profilo (se admin vede tutto)
+    const menuItems = allMenuItems.filter(item => {
+        if (!profile) return true; // Se carica, mostra tutto o niente? Meglio tutto per ora.
+        if (profile.role === 'ADMIN') return true;
+        return profile.permissions?.[item.key] === true;
+    });
+
     const getPageTitle = () => {
-        const item = menuItems.find(i => i.path === location.pathname);
+        const item = allMenuItems.find(i => i.path === location.pathname);
         return item ? item.label : 'Intelligence';
     };
+
+    if (!user) return (
+        <div style={{ background: '#1A0406', height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#FDFDFB' }}>
+            <div className="serif" style={{ letterSpacing: '0.4em', fontSize: '1.2rem', opacity: 0.8 }}>THE LIST</div>
+        </div>
+    );
 
     return (
         <div style={{
@@ -118,13 +150,15 @@ const AdminLayout = ({ children }) => {
                             {new Date().toLocaleDateString('it-IT', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase()}
                         </div>
                         <h2 className="serif" style={{ fontSize: '2.8rem', fontWeight: 300, color: '#1A0406' }}>
-                            {location.pathname === '/admin' ? `Bentornato, Curator.` : getPageTitle()}
+                            {location.pathname === '/admin' || location.pathname === '/admin/intelligence'
+                                ? `Bentornato, ${cleanName(user?.email)}.`
+                                : getPageTitle()}
                         </h2>
                     </div>
                     {user && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                             <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1A0406' }}>{user.email.split('@')[0]}</div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1A0406' }}>{user.email?.split('@')[0]}</div>
                                 <div style={{ fontSize: '0.55rem', color: '#A68966', letterSpacing: '0.15em', fontWeight: 600 }}>CAPO REDATTORE</div>
                             </div>
                             <div style={{
@@ -140,7 +174,7 @@ const AdminLayout = ({ children }) => {
                                 fontWeight: 600,
                                 boxShadow: '0 4px 10px rgba(93, 18, 25, 0.2)'
                             }}>
-                                {user.email[0].toUpperCase()}
+                                {user.email?.[0].toUpperCase()}
                             </div>
                         </div>
                     )}
