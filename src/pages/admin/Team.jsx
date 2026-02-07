@@ -275,7 +275,7 @@ const Team = () => {
                                     fontWeight: 800,
                                     letterSpacing: '0.05em'
                                 }}>
-                                    {member.role === 'MEMBER' ? 'COMMUNITY' : (member.role === 'ADMIN' ? 'ADMIN' : 'EDITOR')}
+                                    {member.role === 'MEMBER' || !member.role ? 'STANDARD' : (member.role === 'ADMIN' ? 'ADMIN' : 'EDITOR')}
                                 </span>
                             </div>
 
