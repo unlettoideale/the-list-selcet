@@ -1,26 +1,25 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Plus, Shield, ShieldAlert, ShieldCheck, Mail, Trash2, Key, X, Check, Lock, Eye, Search } from 'lucide-react';
+import { Users, Plus, Shield, ShieldAlert, ShieldCheck, Mail, Trash2, Key, X, Check, Lock, Eye, Search, Edit3 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 const Team = () => {
     const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isAddOpen, setIsAddOpen] = useState(false);
+    const [isEditOpen, setIsEditOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [editingMember, setEditingMember] = useState(null);
 
-    // Form State for Adding Staff
+    // Form State for Adding/Editing
     const [formData, setFormData] = useState({
         email: '',
         first_name: '',
         last_name: '',
         role: 'EDITOR',
-        permissions: {
-            places: true,
-            articles: true,
-            stats: false,
-            team: false
-        }
+        birth_date: '',
+        phone_number: '',
+        permissions: { places: true, articles: true, stats: false, team: false }
     });
 
     useEffect(() => {
@@ -30,20 +29,18 @@ const Team = () => {
     const fetchTeam = async () => {
         try {
             setLoading(true);
-            console.log("Fetching community members...");
             const { data, error } = await supabase
                 .from('profiles')
                 .select('*')
                 .order('created_at', { ascending: false });
 
             if (error) {
-                console.error("Database Error:", error);
-                // Forniamo un feedback dettagliato all'utente
-                alert(`Errore Database: ${error.message}\n\nCodice: ${error.code}\nVerifica se la tabella 'profiles' esiste in Supabase.`);
+                console.error("Errore Database:", error);
+                alert(`Supabase Error: ${error.message}\nCodice: ${error.code}`);
                 throw error;
             }
 
-            console.log("Members found:", data?.length || 0);
+            console.log("Utenti ricevuti:", data); // Controlla la console (F12)
             setMembers(data || []);
         } catch (err) {
             console.error("Fetch team error:", err);
@@ -59,32 +56,67 @@ const Team = () => {
         m.id?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const handlePermissionToggle = (key) => {
-        setFormData(prev => ({
-            ...prev,
-            permissions: {
-                ...prev.permissions,
-                [key]: !prev.permissions[key]
-            }
-        }));
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log("Dati in invio al database:", formData);
         try {
-            const { error } = await supabase
-                .from('profiles')
-                .insert([{
-                    ...formData,
-                    role: formData.role.toUpperCase()
-                }]);
+            if (isEditOpen) {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .update({
+                        email: formData.email,
+                        first_name: formData.first_name,
+                        last_name: formData.last_name,
+                        role: formData.role.toUpperCase(),
+                        birth_date: formData.birth_date || null,
+                        phone_number: formData.phone_number || ''
+                    })
+                    .eq('id', editingMember.id);
 
-            if (error) throw error;
-            setIsAddOpen(false);
+                if (error) {
+                    console.error("Errore Database Update:", error);
+                    throw new Error(`Salvataggio fallito: ${error.message} (Codice: ${error.code})`);
+                }
+                setIsEditOpen(false);
+                alert("Profilo aggiornato con successo!");
+            } else {
+                const { error } = await supabase
+                    .from('profiles')
+                    .insert([{
+                        ...formData,
+                        role: formData.role.toUpperCase()
+                    }]);
+
+                if (error) throw error;
+                setIsAddOpen(false);
+                alert("Nuovo membro aggiunto!");
+            }
             fetchTeam();
         } catch (err) {
+            console.error("Errore generale:", err);
             alert(err.message);
         }
+    };
+
+    const handleEditClick = (member) => {
+        console.log("CARICAMENTO MODULO MODIFICA:", member);
+        setEditingMember(member);
+
+        let formattedDate = '';
+        if (member.birth_date) {
+            formattedDate = member.birth_date.split('T')[0];
+        }
+
+        setFormData({
+            email: member.email || '',
+            first_name: member.first_name || '',
+            last_name: member.last_name || '',
+            role: member.role || 'MEMBER',
+            birth_date: formattedDate,
+            phone_number: member.phone_number || '',
+            permissions: member.permissions || { places: true, articles: true, stats: false, team: false }
+        });
+        setIsEditOpen(true);
     };
 
     const sendResetPassword = async (email) => {
@@ -103,8 +135,6 @@ const Team = () => {
         if (!window.confirm(`Sei sicuro di voler rimuovere l'utente ${memberEmail} dalla community? questa azione è irreversibile.`)) return;
 
         try {
-            // Nota: L'eliminazione da auth.users richiede permessi service_role.
-            // Qui eliminiamo il profilo. Se c'è un trigger on delete, potrebbe gestire il resto.
             const { error } = await supabase
                 .from('profiles')
                 .delete()
@@ -149,7 +179,11 @@ const Team = () => {
                         </div>
                     </div>
                     <button
-                        onClick={() => setIsAddOpen(true)}
+                        onClick={() => {
+                            setEditingMember(null);
+                            setFormData({ email: '', first_name: '', last_name: '', role: 'EDITOR', permissions: { places: true, articles: true, stats: false, team: false } });
+                            setIsAddOpen(true);
+                        }}
                         style={{
                             background: '#1A0406',
                             color: 'white',
@@ -200,7 +234,7 @@ const Team = () => {
                 <div style={{
                     minWidth: '900px', // Garantisce che il layout non collassi troppo
                     display: 'grid',
-                    gridTemplateColumns: '80px 1.5fr 1.5fr 1.2fr 1fr 100px',
+                    gridTemplateColumns: '80px 1.5fr 1.5fr 1.2fr 1fr 140px',
                     padding: '1.2rem 2rem',
                     background: '#F8F8F5',
                     borderBottom: '1px solid rgba(0,0,0,0.05)',
@@ -226,7 +260,7 @@ const Team = () => {
                             key={member.id}
                             style={{
                                 display: 'grid',
-                                gridTemplateColumns: '80px 1.5fr 1.5fr 1.2fr 1fr 100px',
+                                gridTemplateColumns: '80px 1.5fr 1.5fr 1.2fr 1fr 140px',
                                 padding: '1.2rem 2rem',
                                 borderBottom: '1px solid rgba(0,0,0,0.03)',
                                 alignItems: 'center',
@@ -243,7 +277,7 @@ const Team = () => {
                                     display: 'flex',
                                     justifyContent: 'center',
                                     alignItems: 'center',
-                                    color: member.role === 'MEMBER' ? '#1A0406' : 'white',
+                                    color: member.role === 'MEMBER' || !member.role || member.role === 'STANDARD' ? '#1A0406' : 'white',
                                     fontSize: '1rem',
                                     fontWeight: 700
                                 }}>
@@ -256,7 +290,17 @@ const Team = () => {
                                 <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1A0406', marginBottom: '0.2rem' }}>
                                     {member.first_name || 'Curatore'} {member.last_name || 'Select'}
                                 </h4>
-                                <div style={{ fontSize: '0.65rem', opacity: 0.3, letterSpacing: '0.05em' }}>ID: {member.id?.toUpperCase().slice(0, 8)}...</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+                                    <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                                        <div style={{ fontSize: '0.55rem', opacity: 0.3 }}>ID: {member.id?.slice(0, 8)}</div>
+                                        {member.phone_number && (
+                                            <div style={{ fontSize: '0.65rem', color: '#A68966', fontWeight: 700 }}>{member.phone_number}</div>
+                                        )}
+                                    </div>
+                                    {member.birth_date && (
+                                        <div style={{ fontSize: '0.6rem', opacity: 0.5 }}>🎂 {new Date(member.birth_date).toLocaleDateString('it-IT')}</div>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Email */}
@@ -275,7 +319,7 @@ const Team = () => {
                                     fontWeight: 800,
                                     letterSpacing: '0.05em'
                                 }}>
-                                    {member.role === 'MEMBER' || !member.role ? 'STANDARD' : (member.role === 'ADMIN' ? 'ADMIN' : 'EDITOR')}
+                                    {member.role === 'MEMBER' || !member.role || member.role === 'STANDARD' ? 'STANDARD' : (member.role === 'ADMIN' ? 'ADMIN' : 'EDITOR')}
                                 </span>
                             </div>
 
@@ -286,6 +330,15 @@ const Team = () => {
 
                             {/* Actions */}
                             <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'flex-end' }}>
+                                <button
+                                    onClick={() => handleEditClick(member)}
+                                    title="Modifica Utente"
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', transition: 'transform 0.2s ease' }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                >
+                                    <Edit3 size={18} color="#1A0406" />
+                                </button>
                                 <button
                                     onClick={() => sendResetPassword(member.email)}
                                     title="Dati Account / Reset Password"
@@ -310,9 +363,9 @@ const Team = () => {
                 </div>
             </div>
 
-            {/* MODAL AGGIUNGI STAFF */}
+            {/* MODAL AGGIUNGI / MODIFICA */}
             <AnimatePresence>
-                {isAddOpen && (
+                {(isAddOpen || isEditOpen) && (
                     <motion.div
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                         style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(26, 4, 6, 0.9)', backdropFilter: 'blur(20px)', zIndex: 3000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}
@@ -322,27 +375,73 @@ const Team = () => {
                             style={{ background: '#FDFDFB', width: '100%', maxWidth: '500px', borderRadius: '16px', padding: '3.5rem', boxShadow: '0 50px 100px rgba(0,0,0,0.6)' }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3rem' }}>
-                                <h3 className="serif" style={{ fontSize: '2rem' }}>Privilegi Staff</h3>
-                                <button onClick={() => setIsAddOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.3 }}><X size={32} /></button>
+                                <h3 className="serif" style={{ fontSize: '2rem' }}>{isEditOpen ? 'Modifica Profilo' : 'Privilegi Staff'}</h3>
+                                <button onClick={() => { setIsAddOpen(false); setIsEditOpen(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.3 }}><X size={32} /></button>
                             </div>
 
-                            <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1.8rem' }}>
+                            <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1.2rem' }}>
                                 <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.6, marginBottom: '0.8rem', fontWeight: 700 }}>Email Profilo</label>
-                                    <input required type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} style={{ width: '100%', padding: '1.2rem', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '10px', fontSize: '1rem', background: '#F8F8F5' }} />
+                                    <label style={{ display: 'block', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.6, marginBottom: '0.5rem', fontWeight: 700 }}>Email Profilo</label>
+                                    <input required type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} style={{ width: '100%', padding: '1rem', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '10px', fontSize: '1rem', background: '#F8F8F5' }} />
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
-                                    <input placeholder="Nome" required type="text" value={formData.first_name} onChange={(e) => setFormData({ ...formData, first_name: e.target.value })} style={{ width: '100%', padding: '1.2rem', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '10px', background: '#F8F8F5' }} />
-                                    <input placeholder="Cognome" required type="text" value={formData.last_name} onChange={(e) => setFormData({ ...formData, last_name: e.target.value })} style={{ width: '100%', padding: '1.2rem', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '10px', background: '#F8F8F5' }} />
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.6rem', opacity: 0.4, marginBottom: '0.4rem' }}>NOME</label>
+                                        <input required type="text" value={formData.first_name} onChange={(e) => setFormData({ ...formData, first_name: e.target.value })} style={{ width: '100%', padding: '1rem', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '10px', background: '#F8F8F5' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.6rem', opacity: 0.4, marginBottom: '0.4rem' }}>COGNOME</label>
+                                        <input required type="text" value={formData.last_name} onChange={(e) => setFormData({ ...formData, last_name: e.target.value })} style={{ width: '100%', padding: '1rem', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '10px', background: '#F8F8F5' }} />
+                                    </div>
                                 </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1rem' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.6rem', opacity: 0.4, marginBottom: '0.4rem' }}>TELEFONO</label>
+                                        <input type="text" value={formData.phone_number} onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })} placeholder="+39..." style={{ width: '100%', padding: '1rem', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '10px', background: '#F8F8F5' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.6rem', opacity: 0.4, marginBottom: '0.4rem' }}>DATA NASCITA</label>
+                                        <input
+                                            type="date"
+                                            value={formData.birth_date}
+                                            onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                                            style={{ width: '100%', padding: '1rem', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '10px', background: '#F8F8F5', color: '#1A0406' }}
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.6, marginBottom: '0.8rem', fontWeight: 700 }}>Ruolo Studio</label>
-                                    <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} style={{ width: '100%', padding: '1.2rem', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '10px', appearance: 'none', cursor: 'pointer', background: '#F8F8F5' }}>
-                                        <option value="EDITOR">EDITOR (Contributor)</option>
+                                    <label style={{ display: 'block', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.6, marginBottom: '0.5rem', fontWeight: 700 }}>Ruolo Community / Studio</label>
+                                    <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} style={{ width: '100%', padding: '1rem', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '10px', background: '#F8F8F5' }}>
+                                        <option value="MEMBER">STANDARD (Utente Community)</option>
+                                        <option value="EDITOR">EDITOR (Staff Contributor)</option>
                                         <option value="ADMIN">ADMIN (Full Control)</option>
                                     </select>
                                 </div>
-                                <button type="submit" style={{ marginTop: '1.5rem', width: '100%', backgroundColor: '#1A0406', color: 'white', border: 'none', padding: '1.4rem', borderRadius: '10px', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', letterSpacing: '0.1em' }}>NOMINA NUOVO STAFF</button>
+
+                                {isEditOpen && (
+                                    <div style={{ padding: '1.5rem', backgroundColor: 'rgba(166,137,102,0.05)', borderRadius: '12px', border: '1px dashed rgba(166,137,102,0.3)', marginTop: '0.5rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div>
+                                                <p style={{ fontSize: '0.75rem', fontWeight: 800, color: '#1A0406' }}>SICUREZZA</p>
+                                                <p style={{ fontSize: '0.6rem', opacity: 0.5 }}>Invia mail per nuova password</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => sendResetPassword(formData.email)}
+                                                style={{ backgroundColor: '#A68966', color: 'white', border: 'none', padding: '0.6rem 1rem', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer' }}
+                                            >
+                                                INVIA RESET
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <button type="submit" style={{ marginTop: '1rem', width: '100%', backgroundColor: '#1A0406', color: 'white', border: 'none', padding: '1.4rem', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', letterSpacing: '0.1em' }}>
+                                    {isEditOpen ? 'AGGIORNA PROFILO' : 'NOMINA NUOVO STAFF'}
+                                </button>
                             </form>
                         </motion.div>
                     </motion.div>
