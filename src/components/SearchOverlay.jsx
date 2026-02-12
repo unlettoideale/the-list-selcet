@@ -1,26 +1,26 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, MapPin, Navigation } from 'lucide-react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, MapPin, Search } from 'lucide-react';
 
 const SearchOverlay = ({ isOpen, onClose, onSearch }) => {
-    const [query, setQuery] = useState('');
     const navigate = useNavigate();
+    const [query, setQuery] = useState('');
 
-    // Reset query when closed
-    useEffect(() => {
-        if (!isOpen) setQuery('');
-    }, [isOpen]);
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (query.trim()) {
-            onSearch(query);
+    const handleSearch = (q) => {
+        const searchQuery = q || query;
+        if (searchQuery.trim()) {
+            if (searchQuery === '__nearby__') {
+                onSearch(''); // Clear global query
+                navigate('/nearby'); // SPA navigation
+            } else {
+                onSearch(searchQuery.trim());
+            }
             onClose();
         }
     };
 
-    const quickSearches = ['Milano', 'Roma', 'Paris', 'London', 'Dubai'];
+    const quickSearch = ['Ristoranti', 'Roof Top', 'Hotel', 'Colazione', 'Cocktail Bar'];
 
     return (
         <AnimatePresence>
@@ -29,106 +29,105 @@ const SearchOverlay = ({ isOpen, onClose, onSearch }) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
+                    transition={{ duration: 0.35 }}
                     style={{
-                        position: 'fixed',
-                        inset: 0,
-                        backgroundColor: 'rgba(26, 4, 6, 0.98)',
-                        backdropFilter: 'blur(15px)',
-                        zIndex: 2000,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        padding: '2rem'
+                        position: 'fixed', inset: 0, zIndex: 4000,
+                        background: 'rgba(249,245,246,0.96)',
+                        backdropFilter: 'blur(24px)',
+                        WebkitBackdropFilter: 'blur(24px)',
+                        display: 'flex', flexDirection: 'column'
                     }}
                 >
-                    {/* Header Overlay */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem' }}>
-                        <button
-                            onClick={onClose}
-                            style={{ background: 'none', border: 'none', color: 'var(--ivory)', padding: '1rem' }}
-                        >
-                            <X size={24} strokeWidth={1.5} />
-                        </button>
-                    </div>
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.15, duration: 0.5 }}
+                        style={{ padding: '2rem 1.5rem' }}
+                    >
+                        {/* Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                            <h2 className="serif" style={{ fontSize: '1.4rem', fontWeight: 500, margin: 0, color: 'var(--text-primary)' }}>Cerca</h2>
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.9 }}
+                                onClick={onClose}
+                                style={{
+                                    width: '36px', height: '36px', borderRadius: '50%',
+                                    background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    cursor: 'pointer', color: 'var(--text-primary)',
+                                    boxShadow: 'var(--shadow-sm)'
+                                }}>
+                                <X size={18} strokeWidth={1.5} />
+                            </motion.button>
+                        </div>
 
-                    {/* Search Form */}
-                    <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: '600px', margin: '0 auto' }}>
-                        <div style={{ position: 'relative' }}>
-                            <Search
-                                size={20}
-                                color="var(--ivory)"
-                                style={{ position: 'absolute', left: '0', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }}
-                            />
+                        {/* Search Input */}
+                        <div style={{
+                            display: 'flex', alignItems: 'center', gap: '0.7rem',
+                            background: 'var(--bg-elevated)', borderRadius: '14px',
+                            padding: '0.9rem 1rem', marginBottom: '2rem',
+                            border: '1px solid var(--border)',
+                            boxShadow: 'var(--shadow-md)',
+                            transition: 'all 0.3s ease'
+                        }}>
+                            <Search size={18} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
                             <input
+                                type="text" value={query} onChange={(e) => setQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                placeholder="Nome, città, categoria..."
                                 autoFocus
-                                type="text"
-                                placeholder="Cerca città o luogo..."
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
                                 style={{
-                                    width: '100%',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    borderBottom: '1px solid var(--border)',
-                                    padding: '1.5rem 2.5rem',
-                                    color: 'var(--ivory)',
-                                    fontSize: '1.5rem',
-                                    fontFamily: 'var(--font-serif)',
-                                    outline: 'none'
+                                    flex: 1, border: 'none', background: 'transparent', outline: 'none',
+                                    color: 'var(--text-primary)', fontSize: '1rem', fontFamily: 'inherit'
                                 }}
                             />
                         </div>
-                    </form>
 
-                    {/* Suggestions */}
-                    <div style={{ width: '100%', maxWidth: '600px', margin: '4rem auto' }}>
-                        <p style={{ fontSize: '0.6rem', letterSpacing: '0.2em', textTransform: 'uppercase', opacity: 0.3, marginBottom: '2rem' }}>
-                            Ricerche suggerite
-                        </p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
-                            {quickSearches.map(city => (
-                                <button
-                                    key={city}
-                                    onClick={() => {
-                                        onSearch(city);
-                                        onClose();
-                                    }}
-                                    style={{
-                                        background: 'rgba(245, 245, 240, 0.05)',
-                                        border: '1px solid var(--border)',
-                                        borderRadius: '30px',
-                                        padding: '0.6rem 1.2rem',
-                                        color: 'var(--ivory)',
-                                        fontSize: '0.8rem',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    {city}
-                                </button>
-                            ))}
+                        {/* Quick searches */}
+                        <div>
+                            <p style={{ fontSize: '0.5rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.8rem', fontWeight: 600 }}>
+                                Ricerche suggerite
+                            </p>
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                {quickSearch.map((item, idx) => (
+                                    <motion.button key={item}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.2 + idx * 0.06 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => { setQuery(item); handleSearch(item); }}
+                                        style={{
+                                            padding: '0.5rem 1rem', borderRadius: '20px',
+                                            background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                                            color: 'var(--text-primary)', fontSize: '0.7rem', fontWeight: 500,
+                                            cursor: 'pointer', transition: 'all 0.3s ease',
+                                            boxShadow: 'var(--shadow-xs)'
+                                        }}
+                                    >
+                                        {item}
+                                    </motion.button>
+                                ))}
+                            </div>
                         </div>
 
-                        <div style={{ marginTop: '5rem' }}>
-                            <button
-                                onClick={() => {
-                                    // Handle geo location search if needed
-                                    onClose();
-                                }}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '1rem',
-                                    background: 'none',
-                                    border: 'none',
-                                    color: 'var(--gold)',
-                                    fontSize: '0.9rem',
-                                    opacity: 0.8
-                                }}
-                            >
-                                <Navigation size={18} />
-                                <span>Cerca vicino a me</span>
-                            </button>
-                        </div>
-                    </div>
+                        {/* Location button */}
+                        <motion.button
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.5 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => { onSearch('__nearby__'); onClose(); }}
+                            style={{
+                                width: '100%', padding: '0.9rem',
+                                background: 'linear-gradient(135deg, var(--accent-soft), var(--bronze-soft))',
+                                border: '1px solid var(--accent-border)', borderRadius: '14px',
+                                color: 'var(--accent)', fontSize: '0.65rem', fontWeight: 600,
+                                letterSpacing: '0.1em', cursor: 'pointer', marginTop: '2rem',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                            }}
+                        >
+                            <MapPin size={15} /> CERCA VICINO A ME
+                        </motion.button>
+                    </motion.div>
                 </motion.div>
             )}
         </AnimatePresence>

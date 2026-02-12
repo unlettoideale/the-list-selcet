@@ -1,207 +1,119 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { MapPin, Navigation, ChevronRight, Star } from 'lucide-react';
+import { MapPin, Navigation, ChevronRight, Star, Clock, Heart } from 'lucide-react';
+import { CATEGORIES, CATEGORY_LABELS } from '../constants';
+import { useFavorites } from '../hooks/useFavorites';
 
-// Google Maps Component with Expand Animation
 const GoogleMap = ({ center, places, userLocation, allPlaces }) => {
     const mapRef = useRef(null);
     const mapInstance = useRef(null);
     const markersRef = useRef([]);
-    const infoWindowRef = useRef(null);
-    const [isExpanded, setIsExpanded] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (!window.google || !mapRef.current) return;
 
-        // Clear old markers
+        // Always reset markers when places change
         markersRef.current.forEach(m => m.setMap(null));
         markersRef.current = [];
 
-        // Initialize or update map
         if (!mapInstance.current) {
             mapInstance.current = new window.google.maps.Map(mapRef.current, {
                 center: { lat: center[0], lng: center[1] },
-                zoom: 12,
+                zoom: 15,
                 styles: [
-                    { elementType: "geometry", stylers: [{ color: "#1A0406" }] },
-                    { elementType: "labels.text.stroke", stylers: [{ color: "#1A0406" }] },
-                    { elementType: "labels.text.fill", stylers: [{ color: "#A68966" }] },
-                    { featureType: "road", elementType: "geometry", stylers: [{ color: "#2c2c2c" }] },
-                    { featureType: "water", elementType: "geometry", stylers: [{ color: "#0e0e0e" }] },
-                    { featureType: "poi", stylers: [{ visibility: "off" }] }
+                    { elementType: "geometry", stylers: [{ color: "#F2EDE8" }] },
+                    { elementType: "labels.text.stroke", stylers: [{ color: "#F7F2EE" }] },
+                    { elementType: "labels.text.fill", stylers: [{ color: "#8A8478" }] },
+                    { featureType: "road", elementType: "geometry", stylers: [{ color: "#E8DFD6" }] },
+                    { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#DDD4CB" }] },
+                    { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#E0D5CA" }] },
+                    { featureType: "water", elementType: "geometry", stylers: [{ color: "#CBDBE5" }] },
+                    { featureType: "poi", stylers: [{ visibility: "off" }] },
+                    { featureType: "transit", stylers: [{ visibility: "off" }] },
+                    { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#D5E0CE" }] },
+                    { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#DDD4CB" }] }
                 ],
                 disableDefaultUI: true,
-                zoomControl: isExpanded,
-                mapTypeControl: false,
-                streetViewControl: false,
-                fullscreenControl: false,
-                gestureHandling: isExpanded ? 'greedy' : 'cooperative'
+                zoomControl: false,
+                gestureHandling: 'none' // Disable interaction on home preview
             });
-
-            infoWindowRef.current = new window.google.maps.InfoWindow();
-
+            // Add click listener to map instance to ensure clicks on map surface are caught
             mapInstance.current.addListener('click', () => {
-                if (!isExpanded) setIsExpanded(true);
+                navigate('/map');
             });
         } else {
             mapInstance.current.setCenter({ lat: center[0], lng: center[1] });
-            mapInstance.current.setOptions({
-                zoomControl: isExpanded,
-                gestureHandling: isExpanded ? 'greedy' : 'cooperative'
-            });
         }
 
-        // User location marker
         if (userLocation) {
-            new window.google.maps.Marker({
+            const userMarker = new window.google.maps.Marker({
                 position: { lat: userLocation.lat, lng: userLocation.lng },
                 map: mapInstance.current,
-                icon: {
-                    path: window.google.maps.SymbolPath.CIRCLE,
-                    scale: 12,
-                    fillColor: "#4285F4",
-                    fillOpacity: 1,
-                    strokeColor: "#FFFFFF",
-                    strokeWeight: 3
-                },
-                title: "Tu sei qui",
-                zIndex: 1000,
-                animation: window.google.maps.Animation.DROP
+                icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#4285F4", fillOpacity: 1, strokeColor: "#FFFFFF", strokeWeight: 3 },
+                title: "Tu sei qui", zIndex: 1000
             });
+            markersRef.current.push(userMarker);
         }
 
-        const placesToShow = allPlaces || places || [];
-
-        placesToShow.forEach((place, index) => {
-            const lat = parseFloat(place.latitude);
-            const lng = parseFloat(place.longitude);
+        const displayPlaces = allPlaces || places || [];
+        displayPlaces.forEach((place, i) => {
+            const lat = parseFloat(place.latitude), lng = parseFloat(place.longitude);
             if (isNaN(lat) || isNaN(lng)) return;
-
             const marker = new window.google.maps.Marker({
-                position: { lat, lng },
-                map: mapInstance.current,
+                position: { lat, lng }, map: mapInstance.current,
                 icon: {
-                    url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-                    scaledSize: new window.google.maps.Size(36, 36)
+                    path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
+                    fillColor: '#9B3A4A', fillOpacity: 1, strokeColor: '#FFFFFF', strokeWeight: 1.5,
+                    scale: 1.4, anchor: new window.google.maps.Point(12, 24)
                 },
-                title: place.name,
-                zIndex: 100 + index,
-                animation: window.google.maps.Animation.DROP
+                title: place.name, zIndex: 100 + i,
+                clickable: false // Markers not clickable on home preview
             });
-
-            const contentString = `
-                <div style="color:#1A0406;font-family:sans-serif;max-width:220px;">
-                    ${place.hero_image ? `
-                        <div style="width:100%;height:100px;background:#f0f0f0;border-radius:8px 8px 0 0;overflow:hidden;">
-                            <img src="${place.hero_image}" style="width:100%;height:100%;object-fit:cover;" alt="${place.name}"/>
-                        </div>
-                    ` : ''}
-                    <div style="padding:12px;">
-                        <strong style="font-size:14px;display:block;margin-bottom:4px;color:#1A0406;">${place.name}</strong>
-                        <div style="font-size:11px;color:#666;margin-bottom:4px;">${place.city || ''}</div>
-                        ${place.price_range ? `<span style="font-size:11px;color:#5D1219;font-weight:600;">${place.price_range}</span>` : ''}
-                        <a href="/place/${place.id}" style="display:block;margin-top:8px;padding:6px 12px;background:#5D1219;color:#fff;text-decoration:none;border-radius:4px;font-size:11px;text-align:center;">
-                            Scopri →
-                        </a>
-                    </div>
-                </div>
-            `;
-
-            marker.addListener('click', () => {
-                infoWindowRef.current.close();
-                infoWindowRef.current.setContent(contentString);
-                infoWindowRef.current.open(mapInstance.current, marker);
-            });
-
             markersRef.current.push(marker);
         });
 
-    }, [center, places, userLocation, allPlaces, isExpanded]);
+        // Fit bounds — focus on nearby only
+        if (places && places.length > 0) {
+            const bounds = new window.google.maps.LatLngBounds();
+            places.forEach(p => {
+                const lat = parseFloat(p.latitude), lng = parseFloat(p.longitude);
+                if (!isNaN(lat) && !isNaN(lng)) bounds.extend({ lat, lng });
+            });
+            if (userLocation) bounds.extend(userLocation);
+            mapInstance.current.fitBounds(bounds, 50);
 
-    const handleClose = (e) => {
-        e.stopPropagation();
-        setIsExpanded(false);
-    };
+            // Cap zoom
+            const listener = window.google.maps.event.addListener(mapInstance.current, 'idle', () => {
+                if (mapInstance.current.getZoom() > 16) mapInstance.current.setZoom(16);
+                window.google.maps.event.removeListener(listener);
+            });
+        }
+    }, [center, places, userLocation, allPlaces, navigate]);
 
     return (
-        <div
-            style={{
-                width: '100%',
-                height: isExpanded ? '400px' : '180px',
-                position: 'relative',
-                transition: 'height 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                cursor: isExpanded ? 'default' : 'pointer'
-            }}
-            onClick={() => !isExpanded && setIsExpanded(true)}
-        >
-            <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
-
-            {!isExpanded && (
-                <div style={{
-                    position: 'absolute',
-                    bottom: '10px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    background: 'rgba(0,0,0,0.7)',
-                    color: '#fff',
-                    padding: '6px 16px',
-                    borderRadius: '20px',
-                    fontSize: '0.6rem',
-                    fontWeight: 600,
-                    letterSpacing: '0.1em',
-                    pointerEvents: 'none'
-                }}>
-                    TAP PER ESPANDERE
-                </div>
-            )}
-
-            {isExpanded && (
-                <button
-                    onClick={handleClose}
-                    style={{
-                        position: 'absolute',
-                        top: '10px',
-                        right: '10px',
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '50%',
-                        background: 'rgba(0,0,0,0.8)',
-                        color: '#fff',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '18px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 1000
-                    }}
-                >
-                    ×
-                </button>
-            )}
-
-            <style>{`
-                .gm-style-cc, .gmnoprint:not(.gm-bundled-control), 
-                .gm-style a[href^="https://maps.google.com"],
-                .gm-style div[style*="background-color: white"] { 
-                    display: none !important; 
-                }
-                .gm-style .gm-style-iw-c {
-                    border-radius: 12px !important;
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
-                    padding: 0 !important;
-                }
-                .gm-style .gm-style-iw-d {
-                    overflow: hidden !important;
-                }
-            `}</style>
+        <div style={{
+            width: '100%', height: '240px', position: 'relative', cursor: 'pointer',
+            borderRadius: '16px', overflow: 'hidden'
+        }} onClick={() => navigate('/map')}>
+            <div ref={mapRef} style={{ width: '100%', height: '100%', pointerEvents: 'none' }} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+                style={{
+                    position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)',
+                    background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(10px)', color: '#1A1A1A',
+                    padding: '7px 18px', borderRadius: '20px', fontSize: '0.6rem', fontWeight: 600,
+                    letterSpacing: '0.15em', pointerEvents: 'none', boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
+                    border: '1px solid rgba(0,0,0,0.06)'
+                }}>APRI MAPPA</motion.div>
+            <style>{`.gm-style-cc,.gmnoprint:not(.gm-bundled-control),.gm-style a[href^="https://maps.google.com"]{display:none!important}`}</style>
         </div>
     );
 };
 
-const Home = ({ externalQuery }) => {
+
+const Home = ({ session }) => {
     const [places, setPlaces] = useState([]);
     const [nearbyPlaces, setNearbyPlaces] = useState([]);
     const [category, setCategory] = useState('ALL');
@@ -210,28 +122,20 @@ const Home = ({ externalQuery }) => {
     const [userLocation, setUserLocation] = useState(null);
     const [locationStatus, setLocationStatus] = useState('prompt');
     const [mapCenter, setMapCenter] = useState([45.4642, 9.1900]);
-
-    const categories = ['ALL', 'RESTAURANT', 'HOTEL', 'BAR', 'EXPERIENCE'];
+    const [recentlyViewed, setRecentlyViewed] = useState([]);
+    const categories = ['ALL', 'RESTAURANT', 'ROOFTOP', 'HOTEL', 'BREAKFAST_BAR', 'COCKTAIL_BAR'];
+    const { isFavorite, toggleFavorite } = useFavorites();
 
     useEffect(() => {
-        fetchPlaces();
-        requestLocation();
-        window.scrollTo(0, 0);
+        fetchPlaces(); requestLocation(); window.scrollTo(0, 0);
+        try { const stored = JSON.parse(localStorage.getItem('recentlyViewed') || '[]'); setRecentlyViewed(stored.slice(0, 4)); } catch (e) { }
     }, []);
-
-    useEffect(() => {
-        if (places.length > 0) calculateNearby();
-    }, [places, userLocation]);
+    useEffect(() => { if (places.length > 0) calculateNearby(); }, [places, userLocation]);
 
     const requestLocation = () => {
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const loc = { lat: position.coords.latitude, lng: position.coords.longitude };
-                    setUserLocation(loc);
-                    setMapCenter([loc.lat, loc.lng]);
-                    setLocationStatus('granted');
-                },
+                (p) => { const loc = { lat: p.coords.latitude, lng: p.coords.longitude }; setUserLocation(loc); setMapCenter([loc.lat, loc.lng]); setLocationStatus('granted'); },
                 () => setLocationStatus('denied')
             );
         }
@@ -242,402 +146,225 @@ const Home = ({ externalQuery }) => {
             setLoading(true);
             const { data, error } = await supabase
                 .from('places')
-                .select('*')
+                .select('id, name, category, city, latitude, longitude, hero_image, price_range, tags, created_at')
                 .eq('status', 'ACTIVE');
             if (error) throw error;
             setPlaces(data || []);
-        } catch (err) {
-            console.error("Fetch error:", err);
-        } finally {
-            setLoading(false);
         }
+        catch (err) { console.error("Fetch error:", err); } finally { setLoading(false); }
     }
 
     const getDistance = (lat1, lon1, lat2, lon2) => {
-        const R = 6371;
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) ** 2;
+        const R = 6371, dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     };
 
     const calculateNearby = () => {
         if (userLocation) {
-            const nearby = places
-                .filter(p => p.latitude && p.longitude)
+            setNearbyPlaces(places.filter(p => p.latitude && p.longitude)
                 .map(p => ({ ...p, distance: getDistance(userLocation.lat, userLocation.lng, p.latitude, p.longitude) }))
-                .filter(p => p.distance < 100)
+                .filter(p => p.distance <= 10) // Limit to 10km
                 .sort((a, b) => a.distance - b.distance)
-                .slice(0, 6);
-            setNearbyPlaces(nearby);
-        } else {
-            setNearbyPlaces(places.slice(0, 6));
-        }
+                .slice(0, 4));
+        } else { setNearbyPlaces(places.slice(0, 4)); }
     };
 
-    const filteredPlaces = places.filter(p => {
-        const matchesCat = category === 'ALL' || p.category === category;
-        const matchesPrice = priceRange === 'ALL' || p.price_range === priceRange;
-        const matchesQuery = !externalQuery ||
-            p.name?.toLowerCase().includes(externalQuery.toLowerCase()) ||
-            p.city?.toLowerCase().includes(externalQuery.toLowerCase());
-        return matchesCat && matchesPrice && matchesQuery;
-    });
 
-    const getCategoryEmoji = (cat) => {
-        switch (cat) {
-            case 'RESTAURANT': return '🍽️';
-            case 'HOTEL': return '🏨';
-            case 'BAR': return '🍸';
-            case 'EXPERIENCE': return '⭐';
-            default: return '';
-        }
-    };
+
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            background: 'linear-gradient(180deg, #0A0304 0%, #1A0406 50%, #0A0304 100%)',
-            color: '#FDFDFB',
-            paddingBottom: '120px'
-        }}>
+        <div style={{ minHeight: '100vh', background: 'var(--bg-primary-gradient)', color: 'var(--text-primary)', paddingBottom: '100px' }}>
 
-            {/* HERO */}
-            <motion.header
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                style={{ padding: '3rem 1.5rem 2rem', textAlign: 'center' }}
-            >
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}
-                >
-                    <div style={{
-                        width: '48px', height: '48px', borderRadius: '50%', background: '#FDFDFB',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 4px 30px rgba(166, 137, 102, 0.3)'
-                    }}>
-                        <span style={{
-                            color: '#5D1219', fontFamily: 'var(--font-serif)', fontSize: '0.5rem',
-                            fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em',
-                            lineHeight: 1, textAlign: 'center'
-                        }}>
-                            The<br />List
-                        </span>
+            {/* Header */}
+            <motion.header initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }}
+                style={{ padding: '2.2rem 1.5rem 1.2rem', position: 'relative', zIndex: 1 }}>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1, duration: 0.8 }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
+                    {/* Premium stacked logo */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, position: 'relative' }}>
+                        <motion.span
+                            initial={{ opacity: 0, letterSpacing: '0.8em' }}
+                            animate={{ opacity: 1, letterSpacing: '0.35em' }}
+                            transition={{ delay: 0.3, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+                            style={{ fontFamily: 'var(--font-sans)', fontSize: '0.55rem', fontWeight: 300, textTransform: 'uppercase', color: 'var(--accent)', lineHeight: 1 }}>
+                            THE
+                        </motion.span>
+                        {/* Gold line */}
+                        <motion.div
+                            initial={{ scaleX: 0 }}
+                            animate={{ scaleX: 1 }}
+                            transition={{ delay: 0.6, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                            style={{ width: '100%', height: '1px', background: 'linear-gradient(90deg, transparent, var(--bronze), transparent)', margin: '3px 0', transformOrigin: 'center' }} />
+                        <motion.span
+                            initial={{ opacity: 0, letterSpacing: '0.6em' }}
+                            animate={{ opacity: 1, letterSpacing: '0.22em' }}
+                            transition={{ delay: 0.5, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+                            style={{ fontFamily: 'var(--font-serif)', fontSize: '1.3rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-primary)', lineHeight: 1 }}>
+                            LIST
+                        </motion.span>
                     </div>
+                    <motion.div
+                        initial={{ scaleY: 0 }}
+                        animate={{ scaleY: 1 }}
+                        transition={{ delay: 0.7, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                        style={{ width: '1px', height: '32px', background: 'linear-gradient(to bottom, transparent, var(--bronze-soft), transparent)', flexShrink: 0, transformOrigin: 'center' }} />
+                    <motion.h1
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.8, duration: 0.7 }}
+                        className="serif" style={{ fontSize: '1.8rem', fontWeight: 300, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.02em', fontStyle: 'italic' }}>Selected.</motion.h1>
                 </motion.div>
-
-                <motion.h1
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="serif"
-                    style={{
-                        fontSize: '2.5rem', fontWeight: 300, letterSpacing: '-0.02em', margin: 0,
-                        background: 'linear-gradient(135deg, #FDFDFB 0%, #A68966 100%)',
-                        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
-                    }}
-                >
-                    Selected.
-                </motion.h1>
-                <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 0.4 }}
-                    transition={{ delay: 0.6 }}
-                    style={{ fontSize: '0.65rem', letterSpacing: '0.3em', textTransform: 'uppercase', marginTop: '0.5rem' }}
-                >
+                <motion.p initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1, duration: 0.6 }}
+                    style={{ fontSize: '0.6rem', letterSpacing: '0.25em', textTransform: 'uppercase', marginTop: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
                     A personal curation of places worth being
                 </motion.p>
             </motion.header>
 
-            {/* VICINO A TE */}
-            <motion.section
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                style={{ padding: '0 1rem', marginBottom: '4rem' }}
-            >
-                <div style={{
-                    background: 'linear-gradient(135deg, rgba(93,18,25,0.3) 0%, rgba(26,4,6,0.8) 100%)',
-                    borderRadius: '20px', border: '1px solid rgba(166, 137, 102, 0.2)',
-                    overflow: 'hidden', backdropFilter: 'blur(10px)'
-                }}>
-                    <div style={{
-                        padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                            <div style={{
-                                width: '36px', height: '36px', borderRadius: '50%',
-                                background: 'linear-gradient(135deg, #A68966 0%, #5D1219 100%)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}>
-                                <Navigation size={16} color="white" />
-                            </div>
-                            <div>
-                                <h2 className="serif" style={{ fontSize: '1.3rem', fontWeight: 400, margin: 0 }}>
-                                    Vicino a Te
-                                </h2>
-                                <p style={{ fontSize: '0.6rem', opacity: 0.5, margin: 0 }}>
-                                    {locationStatus === 'granted'
-                                        ? `${nearbyPlaces.length} luoghi selezionati nella tua zona`
-                                        : 'Attiva la posizione per scoprire i luoghi vicini'}
-                                </p>
-                            </div>
-                        </div>
-                        {nearbyPlaces.length > 0 && (
-                            <span style={{
-                                fontSize: '0.55rem', padding: '0.4rem 0.8rem',
-                                background: 'rgba(166, 137, 102, 0.2)', borderRadius: '20px',
-                                color: '#A68966', fontWeight: 600, letterSpacing: '0.1em'
-                            }}>
-                                {nearbyPlaces.length} RESULTS
-                            </span>
-                        )}
+            {/* Visualizzato Recentemente */}
+            {recentlyViewed.length > 0 && (
+                <motion.section initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }}
+                    style={{ padding: '0 1rem', marginBottom: '1.5rem', position: 'relative', zIndex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.8rem', padding: '0 0.2rem' }}>
+                        <Clock size={14} style={{ color: 'var(--text-muted)' }} />
+                        <span style={{ fontSize: '0.6rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600, flex: 1 }}>Visualizzato Recentemente</span>
+                        <button onClick={() => { localStorage.removeItem('recentlyViewed'); setRecentlyViewed([]); }} style={{
+                            background: 'none', border: 'none', padding: '0.2rem 0.4rem', cursor: 'pointer',
+                            fontSize: '0.6rem', color: 'var(--accent)', fontWeight: 500, opacity: 0.7,
+                            transition: 'opacity 0.2s', fontFamily: 'inherit'
+                        }}>Cancella</button>
                     </div>
-
-                    {nearbyPlaces.length > 0 && (
-                        <div style={{ padding: '1.5rem', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                            <div style={{ display: 'flex', gap: '1rem', paddingRight: '1rem' }}>
-                                {nearbyPlaces.map((place, idx) => (
-                                    <Link key={place.id} to={`/place/${place.id}`}
-                                        style={{ minWidth: '200px', maxWidth: '200px', textDecoration: 'none', color: 'inherit' }}>
-                                        <motion.div
-                                            initial={{ opacity: 0, scale: 0.95 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            transition={{ delay: idx * 0.1 }}
-                                            style={{
-                                                background: 'rgba(0,0,0,0.3)', borderRadius: '12px',
-                                                overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)'
-                                            }}
-                                        >
-                                            <div style={{ height: '120px', background: '#1A0406', position: 'relative' }}>
-                                                {place.hero_image ? (
-                                                    <img src={place.hero_image} alt={place.name}
-                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                ) : (
-                                                    <div style={{
-                                                        width: '100%', height: '100%',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        fontSize: '2rem', opacity: 0.3
-                                                    }}>
-                                                        {getCategoryEmoji(place.category)}
-                                                    </div>
-                                                )}
-                                                {place.distance && (
-                                                    <div style={{
-                                                        position: 'absolute', top: '0.5rem', right: '0.5rem',
-                                                        background: 'rgba(0,0,0,0.7)', padding: '0.25rem 0.5rem',
-                                                        borderRadius: '4px', fontSize: '0.55rem', fontWeight: 600
-                                                    }}>
-                                                        📍 {place.distance.toFixed(1)} km
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div style={{ padding: '0.8rem' }}>
-                                                <h4 className="serif" style={{
-                                                    fontSize: '0.9rem', margin: '0 0 0.3rem 0',
-                                                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                                                }}>
-                                                    {place.name}
-                                                </h4>
-                                                <p style={{
-                                                    fontSize: '0.6rem', opacity: 0.5, margin: 0,
-                                                    display: 'flex', alignItems: 'center', gap: '0.3rem'
-                                                }}>
-                                                    <MapPin size={10} /> {place.city}
-                                                    {place.price_range && (
-                                                        <span style={{ marginLeft: 'auto', color: '#A68966' }}>
-                                                            {place.price_range}
-                                                        </span>
-                                                    )}
-                                                </p>
-                                            </div>
-                                        </motion.div>
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Mini Map */}
-                    <div style={{ height: '180px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                        <GoogleMap center={mapCenter} places={nearbyPlaces} allPlaces={places} userLocation={userLocation} />
-                    </div>
-                </div>
-            </motion.section>
-
-            {/* FILTERS */}
-            <div style={{ padding: '0 1rem', marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-                    {categories.map(cat => (
-                        <button key={cat} onClick={() => setCategory(cat)}
-                            style={{
-                                padding: '0.6rem 1.2rem', borderRadius: '20px',
-                                border: category === cat ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                                background: category === cat
-                                    ? 'linear-gradient(135deg, #5D1219 0%, #A68966 100%)'
-                                    : 'transparent',
-                                color: '#FDFDFB', fontSize: '0.65rem', fontWeight: 600,
-                                letterSpacing: '0.1em', cursor: 'pointer', whiteSpace: 'nowrap'
-                            }}
-                        >
-                            {cat === 'ALL' ? 'TUTTI' : `${getCategoryEmoji(cat)} ${cat}`}
-                        </button>
-                    ))}
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
-                    {['ALL', '€', '€€', '€€€', '€€€€', '€€€€€'].map(price => (
-                        <button key={price} onClick={() => setPriceRange(price)}
-                            style={{
-                                padding: '0.4rem 0.8rem', borderRadius: '4px',
-                                border: priceRange === price ? '1px solid #A68966' : '1px solid rgba(255,255,255,0.05)',
-                                background: priceRange === price ? 'rgba(166, 137, 102, 0.2)' : 'transparent',
-                                color: priceRange === price ? '#A68966' : 'rgba(255,255,255,0.4)',
-                                fontSize: '0.6rem', fontWeight: 600, cursor: 'pointer'
-                            }}
-                        >
-                            {price === 'ALL' ? 'Tutti' : price}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* ALL PLACES */}
-            <section style={{ padding: '0 1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h2 className="serif" style={{ fontSize: '1.3rem', fontWeight: 400, margin: 0, opacity: 0.9 }}>
-                        La Selezione
-                    </h2>
-                    <span style={{ fontSize: '0.6rem', opacity: 0.4 }}>{filteredPlaces.length} luoghi</span>
-                </div>
-
-                {loading ? (
-                    <div style={{ textAlign: 'center', padding: '4rem 0', opacity: 0.4 }}>
-                        <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em' }}>CURATING...</div>
-                    </div>
-                ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        {filteredPlaces.map((place, idx) => (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                        {recentlyViewed.map((place, idx) => (
                             <Link key={place.id} to={`/place/${place.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                                <motion.article
-                                    initial={{ opacity: 0, y: 20 }}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: idx * 0.05 }}
+                                    transition={{ delay: 0.3 + idx * 0.08, duration: 0.5 }}
+                                    whileTap={{ scale: 0.97 }}
                                     style={{
-                                        background: 'rgba(255,255,255,0.02)', borderRadius: '16px',
-                                        overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)'
-                                    }}
-                                >
-                                    <div style={{ height: '220px', background: '#1A0406', position: 'relative' }}>
+                                        display: 'flex', alignItems: 'center', gap: '0.6rem',
+                                        background: 'var(--bg-elevated)', borderRadius: '12px', padding: '0.5rem',
+                                        border: '1px solid var(--border)',
+                                        boxShadow: 'var(--shadow-xs)',
+                                        transition: 'all 0.3s ease', overflow: 'hidden'
+                                    }}>
+                                    <div style={{
+                                        width: '40px', height: '40px', borderRadius: '8px', flexShrink: 0,
+                                        background: 'var(--bg-secondary)', overflow: 'hidden'
+                                    }}>
                                         {place.hero_image ? (
-                                            <img src={place.hero_image} alt={place.name}
-                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            <img src={place.hero_image} alt={place.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         ) : (
-                                            <div style={{
-                                                width: '100%', height: '100%',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                fontSize: '4rem', opacity: 0.2
-                                            }}>
-                                                {getCategoryEmoji(place.category)}
-                                            </div>
-                                        )}
-
-                                        <div style={{ position: 'absolute', top: '1rem', left: '1rem', display: 'flex', gap: '0.5rem' }}>
-                                            <span style={{
-                                                background: 'rgba(0,0,0,0.7)', padding: '0.3rem 0.6rem',
-                                                borderRadius: '4px', fontSize: '0.5rem', fontWeight: 700,
-                                                letterSpacing: '0.1em', backdropFilter: 'blur(10px)'
-                                            }}>
-                                                {getCategoryEmoji(place.category)} {place.category}
-                                            </span>
-                                            {place.price_range && (
-                                                <span style={{
-                                                    background: '#5D1219', padding: '0.3rem 0.6rem',
-                                                    borderRadius: '4px', fontSize: '0.55rem', fontWeight: 700
-                                                }}>
-                                                    {place.price_range}
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {place.gallery?.length > 1 && (
-                                            <div style={{
-                                                position: 'absolute', bottom: '1rem', right: '1rem',
-                                                background: 'rgba(0,0,0,0.6)', padding: '0.3rem 0.6rem',
-                                                borderRadius: '4px', fontSize: '0.55rem'
-                                            }}>
-                                                📷 {place.gallery.length}
+                                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', opacity: 0.3 }}>
+                                                <Navigation size={16} color="var(--accent)" />
                                             </div>
                                         )}
                                     </div>
-
-                                    <div style={{ padding: '1.2rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                            <span style={{
-                                                fontSize: '0.45rem', letterSpacing: '0.2em',
-                                                color: '#A68966', fontWeight: 700
-                                            }}>
-                                                CURATED
-                                            </span>
-                                            <Star size={10} color="#A68966" fill="#A68966" />
-                                        </div>
-
-                                        <h3 className="serif" style={{ fontSize: '1.4rem', fontWeight: 400, margin: '0 0 0.5rem 0' }}>
-                                            {place.name}
-                                        </h3>
-
-                                        <p style={{
-                                            fontSize: '0.7rem', opacity: 0.5, margin: '0 0 0.8rem 0',
-                                            display: 'flex', alignItems: 'center', gap: '0.3rem'
-                                        }}>
-                                            <MapPin size={12} /> {place.city}
-                                            {place.address && ` — ${place.address}`}
-                                        </p>
-
-                                        {place.tags?.length > 0 && (
-                                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                                                {place.tags.slice(0, 3).map(tag => (
-                                                    <span key={tag} style={{
-                                                        background: 'rgba(166, 137, 102, 0.1)',
-                                                        padding: '0.25rem 0.6rem', borderRadius: '4px',
-                                                        fontSize: '0.55rem', color: '#A68966'
-                                                    }}>
-                                                        {tag}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        <div style={{
-                                            marginTop: '1rem', paddingTop: '1rem',
-                                            borderTop: '1px solid rgba(255,255,255,0.05)',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-                                        }}>
-                                            <span style={{ fontSize: '0.6rem', opacity: 0.4, letterSpacing: '0.1em' }}>
-                                                SCOPRI
-                                            </span>
-                                            <ChevronRight size={16} style={{ opacity: 0.4 }} />
-                                        </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <p className="serif" style={{ fontSize: '0.95rem', fontWeight: 500, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{place.name}</p>
+                                        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{place.city}</p>
                                     </div>
-                                </motion.article>
+                                </motion.div>
                             </Link>
                         ))}
-
-                        {filteredPlaces.length === 0 && (
-                            <div style={{ textAlign: 'center', padding: '4rem 0', opacity: 0.3 }}>
-                                <p className="serif" style={{ fontSize: '1rem' }}>Nessun luogo trovato</p>
-                            </div>
-                        )}
                     </div>
-                )}
-            </section>
-        </div>
+                </motion.section>
+            )
+            }
+
+            {/* Separator */}
+            {recentlyViewed.length > 0 && <div style={{ margin: '0 2rem 1.5rem', height: '1px', background: 'linear-gradient(90deg, transparent, var(--border), transparent)' }} />}
+
+            {/* Vicino a Te */}
+            <motion.section initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.7 }}
+                style={{ padding: '0 1rem', marginBottom: '2rem', position: 'relative', zIndex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.8rem', padding: '0 0.2rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Navigation size={16} style={{ color: 'var(--accent)' }} />
+                        <span style={{ fontSize: '0.75rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>Vicino a Te</span>
+                    </div>
+                    {locationStatus === 'granted' && nearbyPlaces.length > 0 && (
+                        <Link to="/nearby" style={{ textDecoration: 'none' }}>
+                            <span style={{ fontSize: '0.75rem', padding: '0.4rem 0.8rem', background: 'var(--accent-soft)', borderRadius: '20px', color: 'var(--accent)', fontWeight: 600, letterSpacing: '0.06em', cursor: 'pointer', transition: 'all 0.3s ease' }}>
+                                Visualizza tutti →
+                            </span>
+                        </Link>
+                    )}
+                </div>
+                <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
+                    <GoogleMap center={mapCenter} places={nearbyPlaces} allPlaces={places} userLocation={userLocation} />
+                </div>
+                {/* APRI MAPPA override within GoogleMap component likely needs prop or check component definition */}
+            </motion.section>
+
+            {/* Novità Section */}
+            {
+                places.length > 0 && (
+                    <motion.section initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.7 }}
+                        style={{ padding: '0 0 0 1rem', marginBottom: '2rem', position: 'relative', zIndex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.8rem', paddingRight: '1rem' }}>
+                            <Star size={16} style={{ color: 'var(--bronze)' }} />
+                            <span style={{ fontSize: '0.75rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>Novità</span>
+                        </div>
+                        <div className="no-scrollbar" style={{
+                            display: 'flex', gap: '0.8rem', overflowX: 'auto', paddingBottom: '1rem', paddingRight: '1rem',
+                            scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch'
+                        }}>
+                            {[...places].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 6).map((place, idx) => (
+                                <Link key={place.id} to={`/place/${place.id}`} style={{ textDecoration: 'none', color: 'inherit', flexShrink: 0 }}>
+                                    <motion.div
+                                        whileTap={{ scale: 0.96 }}
+                                        style={{
+                                            width: '180px', height: '260px', background: 'var(--bg-elevated)', borderRadius: '16px',
+                                            overflow: 'hidden', border: '1px solid var(--border)',
+                                            boxShadow: 'var(--shadow-sm)', scrollSnapAlign: 'start',
+                                            display: 'flex', flexDirection: 'column'
+                                        }}>
+                                        <div style={{ height: '160px', position: 'relative', background: 'var(--bg-secondary)' }}>
+                                            {place.hero_image ? (
+                                                <img src={place.hero_image} alt={place.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            ) : (
+                                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', opacity: 0.2 }}>
+                                                    <Navigation size={32} color="var(--accent)" />
+                                                </div>
+                                            )}
+                                            <div style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)', padding: '4px 8px', borderRadius: '8px', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.05em' }}>
+                                                NEW
+                                            </div>
+                                            <motion.button
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={(e) => { e.preventDefault(); toggleFavorite(place.id); }}
+                                                style={{
+                                                    position: 'absolute', top: '8px', right: '8px',
+                                                    width: '28px', height: '28px', borderRadius: '50%',
+                                                    background: 'rgba(255,255,255,0.9)', border: 'none',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    cursor: 'pointer', zIndex: 10, backdropFilter: 'blur(4px)'
+                                                }}>
+                                                <Heart size={14} fill={isFavorite(place.id) ? "var(--accent)" : "transparent"} color={isFavorite(place.id) ? "var(--accent)" : "var(--accent)"} />
+                                            </motion.button>
+                                        </div>
+                                        <div style={{ padding: '0.9rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                            <div>
+                                                <h3 className="serif" style={{ fontSize: '1.05rem', fontWeight: 500, margin: '0 0 0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{place.name}</h3>
+                                                <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', margin: 0 }}>{place.city}</p>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.4rem' }}>
+                                                <span style={{ fontSize: '0.65rem', color: 'var(--accent)', background: 'var(--accent-soft)', padding: '0.2rem 0.5rem', borderRadius: '8px', fontWeight: 600 }}>{CATEGORY_LABELS[place.category] || place.category}</span>
+                                                <span style={{ fontSize: '0.7rem', color: 'var(--bronze)', fontWeight: 600 }}>{place.price_range}</span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                </Link>
+                            ))}
+                        </div>
+                    </motion.section>
+                )
+            }
+
+
+        </div >
     );
 };
 

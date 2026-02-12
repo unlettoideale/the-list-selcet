@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#F7F2EE"/>
+  <text x="256" y="200" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="64" font-weight="300" letter-spacing="18" fill="#9B3A4A" dominant-baseline="middle">THE</text>
+  <rect x="176" y="225" width="160" height="1.5" rx="1" fill="url(#gold)"/>
+  <text x="256" y="310" text-anchor="middle" font-family="'Playfair Display', Georgia, serif" font-size="110" font-weight="700" letter-spacing="16" fill="#1A1A1A" dominant-baseline="middle">LIST</text>
+  <text x="256" y="380" text-anchor="middle" font-family="'Playfair Display', Georgia, serif" font-size="40" font-weight="300" font-style="italic" letter-spacing="10" fill="#B5AEA5" dominant-baseline="middle">selected.</text>
+  <defs>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C4956A" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#C4956A" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#C4956A" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+</svg>

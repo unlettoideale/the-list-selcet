@@ -9,26 +9,46 @@ const TheVault = () => {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('ALL');
-    const [priceFilter, setPriceFilter] = useState('ALL');
+    const [page, setPage] = useState(0);
+    const [totalCount, setTotalCount] = useState(0);
     const [isWizardOpen, setIsWizardOpen] = useState(false);
     const [editingPlace, setEditingPlace] = useState(null);
 
-    const categories = ['RESTAURANT', 'HOTEL', 'BAR', 'EXPERIENCE'];
+    const PLACES_PER_PAGE = 50;
+    const categories = ['RESTAURANT', 'ROOFTOP', 'HOTEL', 'BREAKFAST_BAR', 'COCKTAIL_BAR'];
 
     useEffect(() => {
         fetchVault();
-    }, []);
+    }, [page, search, categoryFilter]);
 
     async function fetchVault() {
         try {
             setLoading(true);
-            const { data, error } = await supabase
+            let query = supabase
                 .from('places')
-                .select('*')
-                .order('created_at', { ascending: false });
+                .select('*', { count: 'exact' });
+
+            // Apply Filters Server-Side
+            if (categoryFilter !== 'ALL') {
+                query = query.eq('category', categoryFilter);
+            }
+
+            if (search) {
+                // ILIKE for case-insensitive search
+                query = query.or(`name.ilike.%${search}%,city.ilike.%${search}%`);
+            }
+
+            const from = page * PLACES_PER_PAGE;
+            const to = from + PLACES_PER_PAGE - 1;
+
+            const { data, error, count } = await query
+                .order('created_at', { ascending: false })
+                .range(from, to);
 
             if (error) throw error;
+
             setPlaces(data || []);
+            setTotalCount(count || 0);
         } catch (err) {
             console.error("Fetch error:", err);
         } finally {
@@ -48,41 +68,26 @@ const TheVault = () => {
 
     const handleDelete = async (id) => {
         if (!confirm("Sei sicuro di voler eliminare definitivamente questo posto?")) return;
-
-        const previousPlaces = [...places];
-        setPlaces(prev => prev.filter(p => p.id !== id));
-
         try {
-            const { error } = await supabase
-                .from('places')
-                .delete()
-                .eq('id', id);
-
-            if (error) {
-                setPlaces(previousPlaces);
-                throw error;
-            }
+            const { error } = await supabase.from('places').delete().eq('id', id);
+            if (error) throw error;
+            fetchVault(); // Refresh list
         } catch (err) {
             console.error("Delete error:", err);
             alert("Errore: " + err.message);
         }
     };
 
-    const filteredPlaces = places.filter(p => {
-        const matchesSearch = p.name?.toLowerCase().includes(search.toLowerCase()) ||
-            p.city?.toLowerCase().includes(search.toLowerCase()) ||
-            p.tags?.some(t => t.toLowerCase().includes(search.toLowerCase()));
-        const matchesCat = categoryFilter === 'ALL' || p.category === categoryFilter;
-        const matchesPrice = priceFilter === 'ALL' || p.price_range === priceFilter;
-        return matchesSearch && matchesCat && matchesPrice;
-    });
+    // We strictly use the data from DB now, no client-side filtering needed for these
+    const filteredPlaces = places;
 
     const getCategoryEmoji = (cat) => {
         switch (cat) {
             case 'RESTAURANT': return '🍽️';
+            case 'ROOFTOP': return '🌇';
             case 'HOTEL': return '🏨';
-            case 'BAR': return '🍸';
-            case 'EXPERIENCE': return '⭐';
+            case 'BREAKFAST_BAR': return '☕';
+            case 'COCKTAIL_BAR': return '🍸';
             default: return '📍';
         }
     };
@@ -130,31 +135,19 @@ const TheVault = () => {
                         }}
                     >
                         <option value="ALL">Tutte le categorie</option>
-                        {categories.map(c => <option key={c} value={c}>{getCategoryEmoji(c)} {c}</option>)}
+                        {categories.map(c => {
+                            let label = c;
+                            if (c === 'RESTAURANT') label = 'Ristorante';
+                            if (c === 'ROOFTOP') label = 'Roof Top';
+                            if (c === 'HOTEL') label = 'Hotel';
+                            if (c === 'BREAKFAST_BAR') label = 'Colazione';
+                            if (c === 'COCKTAIL_BAR') label = 'Cocktail Bar';
+                            return <option key={c} value={c}>{getCategoryEmoji(c)} {label}</option>
+                        })}
                     </select>
 
                     {/* Price Filter */}
-                    <select
-                        value={priceFilter}
-                        onChange={(e) => setPriceFilter(e.target.value)}
-                        style={{
-                            padding: '0.8rem 1.5rem',
-                            border: '1px solid rgba(0,0,0,0.1)',
-                            borderRadius: '8px',
-                            background: '#FDFDFB',
-                            fontSize: '0.8rem',
-                            color: '#1A0406',
-                            outline: 'none',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        <option value="ALL">Tutti i prezzi</option>
-                        <option value="€">€ Economico</option>
-                        <option value="€€">€€ Medio</option>
-                        <option value="€€€">€€€ Medio-Alto</option>
-                        <option value="€€€€">€€€€ Alto</option>
-                        <option value="€€€€€">€€€€€ Luxury</option>
-                    </select>
+
                 </div>
 
                 <button
@@ -364,6 +357,46 @@ const TheVault = () => {
                     </div>
                 )}
             </div>
+
+            {/* Pagination Controls */}
+            {totalCount > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '2rem', paddingBottom: '2rem' }}>
+                    <button
+                        disabled={page === 0}
+                        onClick={() => setPage(p => Math.max(0, p - 1))}
+                        style={{
+                            padding: '0.6rem 1.2rem',
+                            background: '#FDFDFB',
+                            border: '1px solid rgba(0,0,0,0.1)',
+                            borderRadius: '8px',
+                            cursor: page === 0 ? 'not-allowed' : 'pointer',
+                            opacity: page === 0 ? 0.5 : 1,
+                            fontSize: '0.8rem', fontWeight: 600, color: '#1A0406'
+                        }}
+                    >
+                        Precedente
+                    </button>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1A0406' }}>
+                        Pagina {page + 1} di {Math.max(1, Math.ceil(totalCount / PLACES_PER_PAGE))}
+                    </div>
+                    <button
+                        disabled={(page + 1) * PLACES_PER_PAGE >= totalCount}
+                        onClick={() => setPage(p => p + 1)}
+                        style={{
+                            padding: '0.6rem 1.2rem',
+                            background: '#5D1219',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: (page + 1) * PLACES_PER_PAGE >= totalCount ? 'not-allowed' : 'pointer',
+                            opacity: (page + 1) * PLACES_PER_PAGE >= totalCount ? 0.5 : 1,
+                            fontSize: '0.8rem', fontWeight: 600
+                        }}
+                    >
+                        Successiva
+                    </button>
+                </div>
+            )}
 
             {/* Place Wizard */}
             <PlaceWizard

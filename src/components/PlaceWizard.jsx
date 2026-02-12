@@ -4,6 +4,7 @@ import { X, Upload, Loader2, Camera, Star, ChevronLeft, ChevronRight, GripVertic
 import { supabase } from '../lib/supabase';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import { CATEGORY_TAGS, PRICE_RANGES } from '../constants';
 
 // Componente per aggiornare la vista della mappa
 function ChangeView({ center, zoom }) {
@@ -13,32 +14,6 @@ function ChangeView({ center, zoom }) {
     }, [center, zoom, map]);
     return null;
 }
-
-// Tags per ogni categoria
-const CATEGORY_TAGS = {
-    RESTAURANT: [
-        'Fine Dining', 'Trattoria', 'Bistrot', 'Pizzeria', 'Sushi',
-        'Pesce', 'Carne', 'Vegetariano', 'Vegano', 'Brunch',
-        'Street Food', 'Etnico', 'Stellato', 'Vista', 'Romantico'
-    ],
-    HOTEL: [
-        'Boutique', 'Luxury', 'Design', 'B&B', 'Resort',
-        'Spa', 'Romantico', 'Business', 'Famiglia', 'Pet Friendly',
-        'Centro Storico', 'Vista Mare', 'Piscina', 'Rooftop'
-    ],
-    BAR: [
-        'Cocktail Bar', 'Wine Bar', 'Speakeasy', 'Rooftop', 'Pub',
-        'Lounge', 'Aperitivo', 'Live Music', 'DJ Set', 'Vista',
-        'Intimo', 'Trendy', 'Storico'
-    ],
-    EXPERIENCE: [
-        'Outdoor', 'Arte', 'Musica', 'Sport', 'Wellness',
-        'Tour', 'Evento', 'Workshop', 'Degustazione', 'Avventura',
-        'Cultura', 'Romantico', 'Famiglia', 'Notturno'
-    ]
-};
-
-const PRICE_RANGES = ['€', '€€', '€€€', '€€€€', '€€€€€'];
 
 const PlaceWizard = ({ isOpen, onClose, editingPlace, onSave }) => {
     const [currentStep, setCurrentStep] = useState(1);
@@ -442,10 +417,11 @@ const PlaceWizard = ({ isOpen, onClose, editingPlace, onSave }) => {
                                             onChange={(e) => setFormData({ ...formData, category: e.target.value, tags: [] })}
                                             style={{ width: '100%', padding: '1rem', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', fontSize: '0.9rem' }}
                                         >
-                                            <option value="RESTAURANT">🍽️ Restaurant</option>
+                                            <option value="RESTAURANT">🍽️ Ristorante</option>
+                                            <option value="ROOFTOP">🌇 Roof Top</option>
                                             <option value="HOTEL">🏨 Hotel</option>
-                                            <option value="BAR">🍸 Bar</option>
-                                            <option value="EXPERIENCE">⭐ Experience</option>
+                                            <option value="BREAKFAST_BAR">☕ Colazione</option>
+                                            <option value="COCKTAIL_BAR">🍸 Cocktail Bar</option>
                                         </select>
                                     </div>
                                 </div>

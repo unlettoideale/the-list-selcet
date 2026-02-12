@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 const BottomNav = ({ session, isSearchOpen, onOpenSearch, onCloseSearch }) => {
     const location = useLocation();
 
-    // 0: Home, 1: Search, 2: Saved, 3: Account
     const getActiveTab = () => {
         if (isSearchOpen) return 1;
         if (location.pathname === '/') return 0;
@@ -25,22 +24,11 @@ const BottomNav = ({ session, isSearchOpen, onOpenSearch, onCloseSearch }) => {
 
     return (
         <nav className="bottom-nav">
-            {/* The Animated Bubble */}
             <motion.div
                 className="nav-active-bg"
-                animate={{
-                    x: `calc(${activeIdx * (100 / tabs.length)}vw + ${(100 / tabs.length) / 2}vw - 22.5px)`,
-                }}
-                transition={{
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 30
-                }}
-                style={{
-                    left: 0,
-                    top: '-15px',
-                    position: 'absolute'
-                }}
+                animate={{ x: `calc(${activeIdx * (100 / tabs.length)}vw + ${(100 / tabs.length) / 2}vw - 22px)` }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                style={{ left: 0, top: '-14px', position: 'absolute' }}
             />
 
             {tabs.map((tab, idx) => {
@@ -49,59 +37,32 @@ const BottomNav = ({ session, isSearchOpen, onOpenSearch, onCloseSearch }) => {
 
                 const content = (
                     <motion.div
-                        animate={{
-                            y: active ? -28 : 0,
-                            scale: active ? 1.1 : 1
-                        }}
-                        transition={{
-                            type: "spring",
-                            stiffness: 400,
-                            damping: 25
-                        }}
+                        animate={{ y: active ? -26 : 0, scale: active ? 1.05 : 1 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
                         style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            zIndex: 2,
-                            color: active ? 'var(--bordeaux-main)' : 'var(--grey-warm)',
-                            width: '100%',
-                            height: '100%',
-                            justifyContent: 'center'
+                            display: 'flex', flexDirection: 'column', alignItems: 'center',
+                            zIndex: 2, color: active ? '#FFFFFF' : '#B5AEA5',
+                            width: '100%', height: '100%', justifyContent: 'center'
                         }}
                     >
-                        <Icon size={22} strokeWidth={active ? 2.5 : 1.2} />
+                        <Icon size={20} strokeWidth={active ? 2.2 : 1.3} />
                     </motion.div>
                 );
 
                 if (tab.isButton) {
                     return (
-                        <button
-                            key={tab.id}
-                            className="nav-item"
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--grey-warm)', flex: 1, height: '100%' }}
-                            onClick={() => {
-                                if (isSearchOpen) {
-                                    onCloseSearch();
-                                } else {
-                                    onOpenSearch();
-                                }
-                            }}
-                        >
+                        <button key={tab.id} className="nav-item"
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#B5AEA5', flex: 1, height: '100%' }}
+                            onClick={() => isSearchOpen ? onCloseSearch() : onOpenSearch()}>
                             {content}
                         </button>
                     );
                 }
 
                 return (
-                    <Link
-                        key={tab.id}
-                        to={tab.to}
-                        className="nav-item"
+                    <Link key={tab.id} to={tab.to} className="nav-item"
                         style={{ flex: 1, height: '100%' }}
-                        onClick={() => {
-                            if (isSearchOpen && onCloseSearch) onCloseSearch();
-                        }}
-                    >
+                        onClick={() => { if (isSearchOpen && onCloseSearch) onCloseSearch(); }}>
                         {content}
                     </Link>
                 );
