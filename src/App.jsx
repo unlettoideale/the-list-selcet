@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ThemeProvider } from './context/ThemeContext';
 
 // Pages
 import Auth from './pages/Auth';
@@ -22,6 +23,7 @@ import Team from './pages/admin/Team';
 // Components
 import BottomNav from './components/BottomNav';
 import SearchOverlay from './components/SearchOverlay';
+import PerfMonitor from './components/PerfMonitor';
 
 const AdminWrapper = () => (
     <AdminLayout>
@@ -41,6 +43,12 @@ const AppContent = ({ session, isSearchOpen, setIsSearchOpen }) => {
 
     return (
         <div className="app-shell" style={{ background: 'transparent' }}>
+            {/* Animated Background Blobs */}
+            <div className="animated-bg">
+                <div className="blob blob-1" />
+                <div className="blob blob-2" />
+                <div className="blob blob-3" />
+            </div>
             <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<Home session={session} />} />
@@ -77,6 +85,7 @@ const AppContent = ({ session, isSearchOpen, setIsSearchOpen }) => {
                     isSearchOpen={isSearchOpen}
                     onOpenSearch={() => setIsSearchOpen(true)}
                     onCloseSearch={() => setIsSearchOpen(false)}
+                    onOpenAI={() => { console.log('AI Concierge opened'); }}
                 />
             )}
         </div>
@@ -135,13 +144,15 @@ function App() {
     );
 
     return (
-        <Router>
-            <AppContent
-                session={session}
-                isSearchOpen={isSearchOpen}
-                setIsSearchOpen={setIsSearchOpen}
-            />
-        </Router>
+        <ThemeProvider>
+            <Router>
+                <AppContent
+                    session={session}
+                    isSearchOpen={isSearchOpen}
+                    setIsSearchOpen={setIsSearchOpen}
+                />
+            </Router>
+        </ThemeProvider>
     );
 }
 

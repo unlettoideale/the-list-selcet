@@ -15,6 +15,7 @@
         "framer-motion": "^11.0.8",
         "leaflet": "^1.9.4",
         "lucide-react": "^0.344.0",
+        "maplibre-gl": "^5.18.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "react-leaflet": "^4.2.1",
@@ -28,6 +29,7 @@
         "eslint-plugin-react": "^7.33.2",
         "eslint-plugin-react-hooks": "^4.6.0",
         "eslint-plugin-react-refresh": "^0.4.5",
+        "vercel": "^50.18.1",
         "vite": "^5.1.4"
     }
 }

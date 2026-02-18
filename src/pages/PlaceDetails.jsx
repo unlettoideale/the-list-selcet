@@ -42,7 +42,7 @@ const PlaceDetails = () => {
     if (!place) return null;
 
     return (
-        <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', color: 'var(--text-primary)' }}>
+        <div style={{ minHeight: '100vh', color: 'var(--text-primary)', position: 'relative', zIndex: 1 }}>
 
             {/* Hero Image */}
             <div style={{ position: 'relative', height: '55vh', overflow: 'hidden' }}>
@@ -55,14 +55,14 @@ const PlaceDetails = () => {
                 />
                 <div style={{
                     position: 'absolute', inset: 0,
-                    background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, transparent 40%, rgba(249,245,246,0.5) 85%, #F9F5F6 100%)'
+                    background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, transparent 40%, rgba(14,0,5,0.5) 85%, rgba(14,0,5,0.9) 100%)'
                 }} />
 
                 {/* Back Button */}
                 <Link to="/" style={{
                     position: 'absolute', top: '2.5rem', left: '1.2rem',
                     width: '38px', height: '38px', borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(10px)',
+                    background: 'rgba(28, 0, 10, 0.5)', backdropFilter: 'blur(10px)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     textDecoration: 'none', color: 'var(--text-primary)', zIndex: 10,
                     boxShadow: '0 2px 12px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)'
@@ -77,7 +77,7 @@ const PlaceDetails = () => {
                     style={{
                         position: 'absolute', top: '2.5rem', right: '1.2rem',
                         width: '38px', height: '38px', borderRadius: '50%',
-                        background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(10px)',
+                        background: 'rgba(28, 0, 10, 0.5)', backdropFilter: 'blur(10px)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         color: 'var(--text-primary)', zIndex: 10, cursor: 'pointer', border: 'none',
                         boxShadow: '0 2px 12px rgba(0,0,0,0.08)'
@@ -88,11 +88,11 @@ const PlaceDetails = () => {
                 {/* Category badge */}
                 <div style={{
                     position: 'absolute', top: '5.5rem', right: '1.2rem',
-                    background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(10px)',
+                    background: 'rgba(28, 0, 10, 0.5)', backdropFilter: 'blur(10px)',
                     padding: '0.35rem 0.8rem', borderRadius: '20px',
                     fontSize: '0.5rem', fontWeight: 700, letterSpacing: '0.1em',
-                    color: 'var(--text-primary)', boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-                    border: '1px solid rgba(0,0,0,0.06)'
+                    color: 'var(--text-primary)', boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
+                    border: '1px solid rgba(255,255,255,0.1)'
                 }}>
                     {place.category} {place.price_range && `· ${place.price_range}`}
                 </div>

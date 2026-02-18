@@ -1,72 +1,140 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home as HomeIcon, Search, Bookmark, User } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Home as HomeIcon, Search, Bookmark, User, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const BottomNav = ({ session, isSearchOpen, onOpenSearch, onCloseSearch }) => {
+const BottomNav = ({ session, isSearchOpen, onOpenSearch, onCloseSearch, onOpenAI }) => {
     const location = useLocation();
 
     const getActiveTab = () => {
-        if (isSearchOpen) return 1;
-        if (location.pathname === '/') return 0;
-        if (location.pathname === '/saved') return 2;
-        if (location.pathname === '/profile' || location.pathname === '/login') return 3;
-        return 0;
+        if (isSearchOpen) return 'search';
+        if (location.pathname === '/') return 'home';
+        if (location.pathname === '/saved') return 'saved';
+        if (location.pathname === '/profile' || location.pathname === '/login') return 'account';
+        return 'home';
     };
 
-    const activeIdx = getActiveTab();
-
-    const tabs = [
-        { id: 'home', to: '/', icon: HomeIcon },
-        { id: 'search', to: '#', icon: Search, isButton: true },
-        { id: 'saved', to: '/saved', icon: Bookmark },
-        { id: 'account', to: session ? "/profile" : "/login", icon: User }
-    ];
+    const activeTab = getActiveTab();
 
     return (
         <nav className="bottom-nav">
-            <motion.div
-                className="nav-active-bg"
-                animate={{ x: `calc(${activeIdx * (100 / tabs.length)}vw + ${(100 / tabs.length) / 2}vw - 22px)` }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                style={{ left: 0, top: '-14px', position: 'absolute' }}
-            />
+            {/* Home */}
+            <Link
+                to="/"
+                className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
+                onClick={() => { if (isSearchOpen && onCloseSearch) onCloseSearch(); }}
+            >
+                <motion.div
+                    animate={{ y: activeTab === 'home' ? -2 : 0 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}
+                >
+                    <HomeIcon size={20} strokeWidth={activeTab === 'home' ? 2 : 1.4} color={activeTab === 'home' ? 'var(--accent)' : 'var(--nav-inactive)'} />
+                    <span className="nav-item-label" style={{ color: activeTab === 'home' ? 'var(--accent)' : 'var(--nav-inactive)' }}>Home</span>
+                </motion.div>
+                <AnimatePresence>
+                    {activeTab === 'home' && (
+                        <motion.div
+                            className="nav-item-dot"
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                        />
+                    )}
+                </AnimatePresence>
+            </Link>
 
-            {tabs.map((tab, idx) => {
-                const active = activeIdx === idx;
-                const Icon = tab.icon;
+            {/* Search */}
+            <button
+                className={`nav-item ${activeTab === 'search' ? 'active' : ''}`}
+                onClick={() => isSearchOpen ? onCloseSearch() : onOpenSearch()}
+            >
+                <motion.div
+                    animate={{ y: activeTab === 'search' ? -2 : 0 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}
+                >
+                    <Search size={20} strokeWidth={activeTab === 'search' ? 2 : 1.4} color={activeTab === 'search' ? 'var(--accent)' : 'var(--nav-inactive)'} />
+                    <span className="nav-item-label" style={{ color: activeTab === 'search' ? 'var(--accent)' : 'var(--nav-inactive)' }}>Cerca</span>
+                </motion.div>
+                <AnimatePresence>
+                    {activeTab === 'search' && (
+                        <motion.div
+                            className="nav-item-dot"
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                        />
+                    )}
+                </AnimatePresence>
+            </button>
 
-                const content = (
-                    <motion.div
-                        animate={{ y: active ? -26 : 0, scale: active ? 1.05 : 1 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                        style={{
-                            display: 'flex', flexDirection: 'column', alignItems: 'center',
-                            zIndex: 2, color: active ? '#FFFFFF' : '#B5AEA5',
-                            width: '100%', height: '100%', justifyContent: 'center'
-                        }}
-                    >
-                        <Icon size={20} strokeWidth={active ? 2.2 : 1.3} />
-                    </motion.div>
-                );
+            {/* AI Concierge — Center */}
+            <div className="ai-center-wrap" onClick={onOpenAI}>
+                <motion.button
+                    className="ai-center-btn"
+                    whileTap={{ scale: 0.88 }}
+                    whileHover={{ scale: 1.05 }}
+                >
+                    <Sparkles size={24} strokeWidth={1.8} />
+                </motion.button>
+                <span className="ai-center-label">Concierge</span>
+            </div>
 
-                if (tab.isButton) {
-                    return (
-                        <button key={tab.id} className="nav-item"
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#B5AEA5', flex: 1, height: '100%' }}
-                            onClick={() => isSearchOpen ? onCloseSearch() : onOpenSearch()}>
-                            {content}
-                        </button>
-                    );
-                }
+            {/* Saved */}
+            <Link
+                to="/saved"
+                className={`nav-item ${activeTab === 'saved' ? 'active' : ''}`}
+                onClick={() => { if (isSearchOpen && onCloseSearch) onCloseSearch(); }}
+            >
+                <motion.div
+                    animate={{ y: activeTab === 'saved' ? -2 : 0 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}
+                >
+                    <Bookmark size={20} strokeWidth={activeTab === 'saved' ? 2 : 1.4} color={activeTab === 'saved' ? 'var(--accent)' : 'var(--nav-inactive)'} />
+                    <span className="nav-item-label" style={{ color: activeTab === 'saved' ? 'var(--accent)' : 'var(--nav-inactive)' }}>Salvati</span>
+                </motion.div>
+                <AnimatePresence>
+                    {activeTab === 'saved' && (
+                        <motion.div
+                            className="nav-item-dot"
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                        />
+                    )}
+                </AnimatePresence>
+            </Link>
 
-                return (
-                    <Link key={tab.id} to={tab.to} className="nav-item"
-                        style={{ flex: 1, height: '100%' }}
-                        onClick={() => { if (isSearchOpen && onCloseSearch) onCloseSearch(); }}>
-                        {content}
-                    </Link>
-                );
-            })}
+            {/* Profile */}
+            <Link
+                to={session ? "/profile" : "/login"}
+                className={`nav-item ${activeTab === 'account' ? 'active' : ''}`}
+                onClick={() => { if (isSearchOpen && onCloseSearch) onCloseSearch(); }}
+            >
+                <motion.div
+                    animate={{ y: activeTab === 'account' ? -2 : 0 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}
+                >
+                    <User size={20} strokeWidth={activeTab === 'account' ? 2 : 1.4} color={activeTab === 'account' ? 'var(--accent)' : 'var(--nav-inactive)'} />
+                    <span className="nav-item-label" style={{ color: activeTab === 'account' ? 'var(--accent)' : 'var(--nav-inactive)' }}>Profilo</span>
+                </motion.div>
+                <AnimatePresence>
+                    {activeTab === 'account' && (
+                        <motion.div
+                            className="nav-item-dot"
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                        />
+                    )}
+                </AnimatePresence>
+            </Link>
         </nav>
     );
 };

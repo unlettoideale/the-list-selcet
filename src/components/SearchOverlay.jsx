@@ -31,11 +31,13 @@ const SearchOverlay = ({ isOpen, onClose, onSearch }) => {
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.35 }}
                     style={{
-                        position: 'fixed', inset: 0, zIndex: 4000,
-                        background: 'rgba(249,245,246,0.96)',
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: '64px',
+                        zIndex: 2500,
+                        background: 'var(--overlay-bg)',
                         backdropFilter: 'blur(24px)',
                         WebkitBackdropFilter: 'blur(24px)',
-                        display: 'flex', flexDirection: 'column'
+                        display: 'flex', flexDirection: 'column',
+                        overflowY: 'auto'
                     }}
                 >
                     <motion.div

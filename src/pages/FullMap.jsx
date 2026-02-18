@@ -1,203 +1,358 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Navigation } from 'lucide-react';
+import { getMapStyle, CATEGORY_COLORS, CATEGORY_ICONS } from '../lib/mapSetup';
+import { SlidersHorizontal, X, MapPin } from 'lucide-react';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 
 export default function FullMap() {
     const navigate = useNavigate();
-    const [places, setPlaces] = useState([]);
-    const [nearbyPlaces, setNearbyPlaces] = useState([]);
-    const [userLocation, setUserLocation] = useState(null);
+    const [placeCount, setPlaceCount] = useState(0);
     const [category, setCategory] = useState('ALL');
+    const [filtersOpen, setFiltersOpen] = useState(false);
     const mapRef = useRef(null);
     const mapInstance = useRef(null);
-    const markersRef = useRef([]);
-    const infoWindowRef = useRef(null);
+    const popupRef = useRef(null);
+    const fetchTimerRef = useRef(null);
+    const initialBoundsSet = useRef(false);
+    const loadedImages = useRef(new Set());
 
     const categories = ['ALL', 'RESTAURANT', 'ROOFTOP', 'HOTEL', 'BREAKFAST_BAR', 'COCKTAIL_BAR'];
     const categoryLabels = {
-        'ALL': 'Tutti',
-        'RESTAURANT': 'Ristoranti',
-        'ROOFTOP': 'Roof Top',
-        'HOTEL': 'Hotel',
-        'BREAKFAST_BAR': 'Colazione',
-        'COCKTAIL_BAR': 'Cocktail Bar'
+        'ALL': 'Tutti', 'RESTAURANT': 'Ristoranti', 'ROOFTOP': 'Roof Top',
+        'HOTEL': 'Hotel', 'BREAKFAST_BAR': 'Colazione', 'COCKTAIL_BAR': 'Cocktail Bar'
     };
-    const getCategoryIcon = (cat) => null;
 
-    useEffect(() => {
-        const fetchPlaces = async () => {
-            const { data } = await supabase.from('places').select('*').eq('status', 'ACTIVE');
-            setPlaces(data || []);
+    // Constant for Luxury Pin SVG
+    const createPinSVG = (color, iconPath) => {
+        const svg = `
+        <svg width="40" height="48" viewBox="0 0 40 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 46L13 37C7.5 30 4 25.5 4 18C4 9.16 11.16 2 20 2C28.84 2 36 9.16 36 18C36 25.5 32 30 26.5 37.5L20 46Z" fill="${color}" stroke="white" stroke-width="1.5"/>
+            <g transform="translate(8, 8)">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    ${iconPath}
+                </svg>
+            </g>
+        </svg>`;
+        return `data:image/svg+xml;base64,${btoa(svg)}`;
+    };
+
+    // Load custom images into MapLibre
+    const loadMarkerImages = (map) => {
+        Object.entries(CATEGORY_COLORS).forEach(([cat, color]) => {
+            if (loadedImages.current.has(cat)) return;
+            const icon = CATEGORY_ICONS[cat] || CATEGORY_ICONS.DEFAULT;
+            const img = new Image();
+            img.onload = () => {
+                if (!map.hasImage(`pin-${cat}`)) {
+                    map.addImage(`pin-${cat}`, img);
+                    loadedImages.current.add(cat);
+                }
+            };
+            img.src = createPinSVG(color, icon);
+        });
+    };
+
+    // Fetch places within bounds
+    const fetchVisiblePlaces = useCallback(async (bounds) => {
+        if (!bounds || !mapInstance.current) return;
+        const sw = bounds.getSouthWest();
+        const ne = bounds.getNorthEast();
+
+        // Round bounds to reduce cache misses and tiny movements
+        const cacheKey = `v3_${Math.round(sw.lat * 20)}_${Math.round(sw.lng * 20)}_${Math.round(ne.lat * 20)}_${Math.round(ne.lng * 20)}_${category}`;
+
+        try {
+            const cached = sessionStorage.getItem(cacheKey);
+            if (cached) {
+                const data = JSON.parse(cached);
+                updateSource(data);
+                return;
+            }
+        } catch { }
+
+        let query = supabase.from('places')
+            .select('id, name, category, latitude, longitude, city')
+            .eq('status', 'ACTIVE')
+            .gte('latitude', sw.lat - 0.01).lte('latitude', ne.lat + 0.01) // Slight buffer for smoother dragging
+            .gte('longitude', sw.lng - 0.01).lte('longitude', ne.lng + 0.01);
+
+        if (category !== 'ALL') query = query.eq('category', category);
+
+        const { data, error } = await query.limit(400);
+        if (error) return;
+
+        const places = data || [];
+        updateSource(places);
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(places)); } catch { }
+    }, [category]);
+
+    const updateSource = (places) => {
+        if (!mapInstance.current) return;
+        const source = mapInstance.current.getSource('places');
+        if (!source) return;
+
+        setPlaceCount(places.length);
+        const geojson = {
+            type: 'FeatureCollection',
+            features: places.map(p => ({
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: [parseFloat(p.longitude), parseFloat(p.latitude)] },
+                properties: { ...p }
+            }))
         };
-        fetchPlaces();
-
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                (p) => setUserLocation({ lat: p.coords.latitude, lng: p.coords.longitude }),
-                () => console.log("Location access denied")
-            );
-        }
-    }, []);
-
-    const getDistance = (lat1, lon1, lat2, lon2) => {
-        const R = 6371;
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        source.setData(geojson);
     };
 
-    // Filter places based on category AND distance (10km)
+    // Popups based on GeoJSON properties
+    const showPopup = (props, lngLat) => {
+        if (popupRef.current) popupRef.current.remove();
+
+        const color = CATEGORY_COLORS[props.category] || CATEGORY_COLORS.DEFAULT;
+
+        popupRef.current = new maplibregl.Popup({
+            offset: 25, closeButton: true, closeOnClick: true,
+            maxWidth: '240px', className: 'premium-popup'
+        })
+            .setLngLat(lngLat)
+            .setHTML(`
+            <div style="font-family:var(--font-sans, 'Inter', sans-serif);padding:14px 16px;">
+                <div style="font-size:15px;font-weight:600;color:#1A1A1A;margin-bottom:4px;letter-spacing:-0.01em;">${props.name}</div>
+                <div style="font-size:11px;color:#8A8478;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em;">${props.city || ''}</div>
+                <a href="/place/${props.id}" style="display:block;text-align:center;padding:10px 0;background:${color};color:#fff;text-decoration:none;border-radius:10px;font-size:12px;font-weight:600;transition:opacity 0.2s;">Scopri di più →</a>
+            </div>
+        `)
+            .addTo(mapInstance.current);
+    };
+
+    // Initialization
     useEffect(() => {
-        let filtered = places.filter(p => p.latitude && p.longitude);
+        if (!mapRef.current || mapInstance.current) return;
 
-        if (userLocation) {
-            filtered = filtered.filter(p => {
-                const dist = getDistance(userLocation.lat, userLocation.lng, p.latitude, p.longitude);
-                return dist <= 10;
-            });
-        }
-
-        if (category !== 'ALL') {
-            filtered = filtered.filter(p => p.category === category);
-        }
-        setNearbyPlaces(filtered);
-    }, [places, userLocation, category]);
-
-
-    // Map Initialization and Update
-    useEffect(() => {
-        if (!window.google || !mapRef.current) return;
-
-        if (!mapInstance.current) {
-            mapInstance.current = new window.google.maps.Map(mapRef.current, {
-                center: userLocation || { lat: 45.4642, lng: 9.1900 },
-                zoom: 14,
-                styles: [
-                    { elementType: "geometry", stylers: [{ color: "#F2EDE8" }] },
-                    { elementType: "labels.text.stroke", stylers: [{ color: "#F7F2EE" }] },
-                    { elementType: "labels.text.fill", stylers: [{ color: "#8A8478" }] },
-                    { featureType: "road", elementType: "geometry", stylers: [{ color: "#E8DFD6" }] },
-                    { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#E0D5CA" }] },
-                    { featureType: "water", elementType: "geometry", stylers: [{ color: "#CBDBE5" }] },
-                    { featureType: "poi", stylers: [{ visibility: "off" }] },
-                ],
-                disableDefaultUI: true,
-                zoomControl: false,
-                gestureHandling: 'greedy'
-            });
-            infoWindowRef.current = new window.google.maps.InfoWindow();
-        }
-
-        // Update User Marker
-        if (userLocation) {
-            new window.google.maps.Marker({
-                position: userLocation,
-                map: mapInstance.current,
-                icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: "#4285F4", fillOpacity: 1, strokeColor: "#FFFFFF", strokeWeight: 3 },
-                title: "Tu sei qui", zIndex: 1000
-            });
-            if (!places.length) mapInstance.current.setCenter(userLocation);
-        }
-
-        // Clear existing markers
-        markersRef.current.forEach(m => m.setMap(null));
-        markersRef.current = [];
-
-        // Add Place Markers
-        nearbyPlaces.forEach((place, i) => {
-            const marker = new window.google.maps.Marker({
-                position: { lat: parseFloat(place.latitude), lng: parseFloat(place.longitude) },
-                map: mapInstance.current,
-                icon: {
-                    path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
-                    fillColor: '#9B3A4A', fillOpacity: 1, strokeColor: '#FFFFFF', strokeWeight: 1.5,
-                    scale: 1.4, anchor: new window.google.maps.Point(12, 24)
-                },
-                zIndex: 100 + i
-            });
-
-            marker.addListener('click', () => {
-                infoWindowRef.current.close();
-                const imgHtml = place.hero_image
-                    ? `<img src="${place.hero_image}" style="width:100%;height:100px;object-fit:cover;border-radius:8px 8px 0 0;display:block;" />`
-                    : '';
-                infoWindowRef.current.setContent(`
-                    <div style="font-family:'Inter',sans-serif;width:200px;border-radius:8px;">
-                        ${imgHtml}
-                        <div style="padding:10px 12px;">
-                            <div style="font-size:13px;font-weight:600;color:#1A1A1A;margin-bottom:2px;">${place.name}</div>
-                            <div style="font-size:10px;color:#8A8478;margin-bottom:8px;">${place.city || ''}</div>
-                            <a href="/place/${place.id}" style="display:block;text-align:center;padding:6px 0;background:#9B3A4A;color:#fff;text-decoration:none;border-radius:6px;font-size:11px;font-weight:600;">Scopri →</a>
-                        </div>
-                    </div>`);
-                infoWindowRef.current.open(mapInstance.current, marker);
-            });
-            markersRef.current.push(marker);
+        const map = new maplibregl.Map({
+            container: mapRef.current,
+            style: getMapStyle(),
+            center: [9.19, 45.46],
+            zoom: 13,
+            attributionControl: false,
+            maxZoom: 18,
+            minZoom: 3,
+            antialias: true
         });
 
-        // Fit bounds
-        if (nearbyPlaces.length > 0) {
-            const bounds = new window.google.maps.LatLngBounds();
-            nearbyPlaces.forEach(p => bounds.extend({ lat: parseFloat(p.latitude), lng: parseFloat(p.longitude) }));
-            if (userLocation) bounds.extend(userLocation);
-            mapInstance.current.fitBounds(bounds, 50); // Padding
-        } else if (userLocation) {
-            mapInstance.current.setCenter(userLocation);
-            mapInstance.current.setZoom(15);
+        mapInstance.current = map;
+
+        map.on('load', () => {
+            loadMarkerImages(map);
+
+            map.addSource('places', {
+                type: 'geojson',
+                data: { type: 'FeatureCollection', features: [] },
+                cluster: true,
+                clusterMaxZoom: 14,
+                clusterRadius: 50
+            });
+
+            // Luxury Clusters
+            map.addLayer({
+                id: 'clusters',
+                type: 'circle',
+                source: 'places',
+                filter: ['has', 'point_count'],
+                paint: {
+                    'circle-color': '#1A1614',
+                    'circle-radius': ['step', ['get', 'point_count'], 22, 10, 26, 50, 32],
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#D4A86A'
+                }
+            });
+
+            map.addLayer({
+                id: 'cluster-count',
+                type: 'symbol',
+                source: 'places',
+                filter: ['has', 'point_count'],
+                layout: {
+                    'text-field': '{point_count}',
+                    'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+                    'text-size': 13
+                },
+                paint: { 'text-color': '#D4A86A' }
+            });
+
+            // Luxury Pins (Symbol Layer)
+            map.addLayer({
+                id: 'unclustered-point',
+                type: 'symbol',
+                source: 'places',
+                filter: ['!', ['has', 'point_count']],
+                layout: {
+                    'icon-image': ['concat', 'pin-', ['get', 'category']],
+                    'icon-size': 0.75,
+                    'icon-allow-overlap': true,
+                    'icon-anchor': 'bottom'
+                }
+            });
+
+            // Interactions
+            map.on('click', 'clusters', (e) => {
+                const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+                const clusterId = features[0].properties.cluster_id;
+                map.getSource('places').getClusterExpansionZoom(clusterId, (err, zoom) => {
+                    if (err) return;
+                    map.easeTo({ center: features[0].geometry.coordinates, zoom: zoom + 1 });
+                });
+            });
+
+            map.on('click', 'unclustered-point', (e) => {
+                const feature = e.features[0];
+                const coordinates = feature.geometry.coordinates.slice();
+                showPopup(feature.properties, coordinates);
+            });
+
+            map.on('mouseenter', 'unclustered-point', () => map.getCanvas().style.cursor = 'pointer');
+            map.on('mouseleave', 'unclustered-point', () => map.getCanvas().style.cursor = '');
+            map.on('mouseenter', 'clusters', () => map.getCanvas().style.cursor = 'pointer');
+            map.on('mouseleave', 'clusters', () => map.getCanvas().style.cursor = '');
+
+            // Initial Position
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(p => {
+                    const loc = [p.coords.longitude, p.coords.latitude];
+                    map.flyTo({ center: loc, zoom: 14 });
+
+                    // User location dot
+                    const el = document.createElement('div');
+                    el.style.cssText = 'width:20px;height:20px;background:#4285F4;border:3px solid #fff;border-radius:50%;box-shadow:0 0 10px rgba(66,133,244,0.3);';
+                    new maplibregl.Marker({ element: el }).setLngLat(loc).addTo(map);
+                }, () => fetchVisiblePlaces(map.getBounds()));
+            } else {
+                fetchVisiblePlaces(map.getBounds());
+            }
+        });
+
+        map.on('moveend', () => {
+            clearTimeout(fetchTimerRef.current);
+            fetchTimerRef.current = setTimeout(() => {
+                fetchVisiblePlaces(map.getBounds());
+            }, 100); // Shorter debounce for "silky" feel
+        });
+
+        // Re-fetch on theme change (re-loads style)
+        const transitionTheme = () => {
+            map.setStyle(getMapStyle());
+            loadedImages.current.clear(); // Re-trigger image load for new style
+            map.once('style.load', () => loadMarkerImages(map));
+        };
+
+        const observer = new MutationObserver(transitionTheme);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+        return () => {
+            map.remove();
+            observer.disconnect();
+            mapInstance.current = null;
+        };
+    }, []);
+
+    // Re-fetch category change
+    useEffect(() => {
+        if (mapInstance.current?.loaded()) fetchVisiblePlaces(mapInstance.current.getBounds());
+    }, [category]);
+
+    const centerOnMe = () => {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(p => {
+                mapInstance.current?.flyTo({ center: [p.coords.longitude, p.coords.latitude], zoom: 14, duration: 800 });
+            });
         }
-
-    }, [nearbyPlaces, userLocation]);
-
+    };
 
     return (
-        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#F7F2EE' }}>
-            {/* Header */}
-            <div style={{ padding: '1.2rem', background: '#F7F2EE', zIndex: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1rem' }}>
-                    <motion.button whileTap={{ scale: 0.92 }} onClick={() => navigate('/')}
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1, background: 'var(--bg-primary, #1A1614)' }}>
+            <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
+
+            <div style={{
+                position: 'absolute', top: '16px', left: '16px',
+                background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px)',
+                borderRadius: '16px', padding: '10px 16px',
+                display: 'flex', alignItems: 'center', gap: '8px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.35)'
+            }}>
+                <MapPin size={15} color="#D4A86A" />
+                <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.75rem', fontWeight: 600, color: '#fff', letterSpacing: '0.02em' }}>
+                    {placeCount} posti trovati
+                </span>
+            </div>
+
+            <motion.button whileTap={{ scale: 0.92 }} onClick={() => setFiltersOpen(!filtersOpen)}
+                style={{
+                    position: 'absolute', top: '16px', right: '16px',
+                    width: '46px', height: '46px', borderRadius: '16px',
+                    background: filtersOpen ? 'linear-gradient(135deg, #D4A86A, #B88B4A)' : 'rgba(0,0,0,0.7)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', boxShadow: '0 8px 32px rgba(0,0,0,0.35)'
+                }}
+            >
+                {filtersOpen ? <X size={18} color="#fff" /> : <SlidersHorizontal size={18} color="#D4A86A" />}
+            </motion.button>
+
+            <AnimatePresence>
+                {filtersOpen && (
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
                         style={{
-                            width: '36px', height: '36px', borderRadius: '50%', border: '1px solid rgba(0,0,0,0.06)',
-                            background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            cursor: 'pointer', boxShadow: '0 1px 6px rgba(0,0,0,0.04)'
-                        }}>
-                        <ArrowLeft size={16} color="#1A1A1A" />
-                    </motion.button>
-                    <div style={{ flex: 1 }}>
-                        <h1 className="serif" style={{ fontSize: '1.2rem', fontWeight: 500, margin: 0 }}>Mappa</h1>
-                        <p style={{ fontSize: '0.55rem', color: '#B5AEA5', margin: 0 }}>
-                            {nearbyPlaces.length} luoghi trovati
-                        </p>
-                    </div>
-                </div>
+                            position: 'absolute', top: '78px', right: '16px',
+                            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(24px)',
+                            borderRadius: '20px', padding: '14px',
+                            border: '1px solid rgba(255,255,255,0.12)',
+                            boxShadow: '0 12px 48px rgba(0,0,0,0.5)',
+                            display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '180px'
+                        }}
+                    >
+                        {categories.map(cat => (
+                            <motion.button key={cat} whileTap={{ scale: 0.97 }}
+                                onClick={() => { setCategory(cat); setFiltersOpen(false); }}
+                                style={{
+                                    padding: '12px 16px', borderRadius: '12px', border: 'none',
+                                    background: category === cat ? 'rgba(212,168,106,0.2)' : 'transparent',
+                                    color: category === cat ? '#D4A86A' : 'rgba(255,255,255,0.6)',
+                                    fontSize: '0.8rem', fontWeight: 500, cursor: 'pointer', textAlign: 'left'
+                                }}
+                            >
+                                {categoryLabels[cat]}
+                            </motion.button>
+                        ))}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                {/* Filters */}
-                <div className="no-scrollbar" style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', paddingBottom: '0.3rem' }}>
-                    {categories.map(cat => (
-                        <motion.button key={cat} onClick={() => setCategory(cat)} whileTap={{ scale: 0.96 }}
-                            style={{
-                                padding: '0.5rem 1rem', borderRadius: '8px',
-                                border: category === cat ? '1px solid #9B3A4A' : '1px solid rgba(0,0,0,0.06)',
-                                background: category === cat ? '#9B3A4A' : '#FFFFFF',
-                                color: category === cat ? '#FFFFFF' : '#1A1A1A',
-                                fontSize: '0.65rem', fontWeight: 500,
-                                letterSpacing: '0.05em', cursor: 'pointer', whiteSpace: 'nowrap',
-                                transition: 'all 0.3s ease',
-                                boxShadow: category === cat ? '0 4px 12px rgba(155,58,74,0.2)' : '0 1px 2px rgba(0,0,0,0.02)'
-                            }}>
-                            {categoryLabels[cat]}
-                        </motion.button>
-                    ))}
-                </div>
-            </div>
+            <motion.button whileTap={{ scale: 0.9 }} onClick={centerOnMe}
+                style={{
+                    position: 'absolute', bottom: '90px', right: '16px',
+                    width: '46px', height: '46px', borderRadius: '16px',
+                    background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', boxShadow: '0 8px 32px rgba(0,0,0,0.35)'
+                }}
+            >
+                <NavIcon size={18} color="#D4A86A" />
+            </motion.button>
 
-            {/* Map Container */}
-            <div style={{ flex: 1, position: 'relative' }}>
-                <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
-                <style>{`.gm-style-cc,.gmnoprint:not(.gm-bundled-control),.gm-style a[href^="https://maps.google.com"]{display:none!important}.gm-style .gm-style-iw-c{border-radius:12px!important;box-shadow:0 4px 24px rgba(0,0,0,0.12)!important;padding:0!important}.gm-style .gm-style-iw-d{overflow:hidden!important}.gm-style .gm-style-iw-tc::after{display:none!important}`}</style>
-            </div>
+            <style>{`
+                .premium-popup .maplibregl-popup-content { border-radius: 18px !important; box-shadow: 0 12px 40px rgba(0,0,0,0.3) !important; padding: 0 !important; border: 1px solid rgba(0,0,0,0.05); }
+                .premium-popup .maplibregl-popup-tip { border-top-color: #fff !important; }
+                .maplibregl-ctrl-attrib { display: none !important; }
+            `}</style>
         </div>
     );
+}
+
+function NavIcon({ size, color }) {
+    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg>;
 }

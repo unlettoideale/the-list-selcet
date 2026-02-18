@@ -14,7 +14,7 @@ const Saved = () => {
     useEffect(() => {
         window.scrollTo(0, 0);
         fetchSavedPlaces();
-    }, [favorites]); // Re-fetch logic if favorites change (though mostly we filter locally if we have all)
+    }, [favorites]);
 
     async function fetchSavedPlaces() {
         if (favorites.length === 0) {
@@ -41,21 +41,21 @@ const Saved = () => {
     }
 
     if (loading) return (
-        <div style={{ background: '#F7F2EE', height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <motion.div animate={{ opacity: [0.3, 0.7, 0.3] }} transition={{ duration: 2, repeat: Infinity }}
-                style={{ color: '#9B3A4A', letterSpacing: '0.3em', fontSize: '0.7rem', fontFamily: 'var(--font-serif)' }}>THE LIST</motion.div>
+                style={{ color: 'var(--accent)', letterSpacing: '0.3em', fontSize: '0.7rem', fontFamily: 'var(--font-serif)' }}>THE LIST</motion.div>
         </div>
     );
 
     return (
-        <div style={{ minHeight: '100vh', background: '#F7F2EE', color: '#1A1A1A', paddingBottom: '100px' }}>
+        <div style={{ minHeight: '100vh', paddingBottom: '100px', position: 'relative', zIndex: 1 }}>
             <motion.header
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.6 }}
                 style={{ padding: '2.5rem 1.5rem 1rem' }}
             >
-                <h1 style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 600, color: '#8A8478', margin: 0 }}>
+                <h1 style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 600, color: 'var(--text-muted)', margin: 0 }}>
                     Salvati ({places.length})
                 </h1>
             </motion.header>
@@ -70,14 +70,14 @@ const Saved = () => {
                     >
                         <div style={{
                             width: '64px', height: '64px', borderRadius: '50%', margin: '0 auto 1.5rem',
-                            background: 'rgba(155,58,74,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            background: 'rgba(212, 168, 106, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}>
-                            <Bookmark size={26} style={{ color: '#B5AEA5' }} />
+                            <Bookmark size={26} style={{ color: 'var(--text-muted)' }} />
                         </div>
-                        <h2 className="serif" style={{ fontSize: '1.3rem', fontWeight: 400, margin: '0 0 0.5rem', color: '#1A1A1A' }}>
+                        <h2 className="serif" style={{ fontSize: '1.3rem', fontWeight: 400, margin: '0 0 0.5rem', color: 'var(--text-primary)' }}>
                             La tua collezione è vuota
                         </h2>
-                        <p style={{ fontSize: '0.7rem', color: '#8A8478', lineHeight: 1.6 }}>
+                        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                             Salva i tuoi luoghi preferiti per averli sempre a portata di mano.
                         </p>
                     </motion.div>
@@ -94,29 +94,29 @@ const Saved = () => {
                                         whileTap={{ scale: 0.98 }}
                                         style={{
                                             display: 'flex', gap: '1rem', padding: '0.8rem',
-                                            background: '#FFFFFF', borderRadius: '16px',
-                                            border: '1px solid rgba(0,0,0,0.04)',
-                                            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                                            background: 'var(--card-bg)', borderRadius: '16px',
+                                            border: '1px solid var(--card-border)',
+                                            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
                                             alignItems: 'center', position: 'relative'
                                         }}
                                     >
-                                        <div style={{ width: '80px', height: '80px', borderRadius: '12px', overflow: 'hidden', flexShrink: 0, background: '#EDE5DF' }}>
+                                        <div style={{ width: '80px', height: '80px', borderRadius: '12px', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-secondary)' }}>
                                             {place.hero_image ? (
                                                 <img src={place.hero_image} alt={place.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                             ) : (
                                                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.3 }}>
-                                                    <Navigation size={24} color="#9B3A4A" />
+                                                    <Navigation size={24} color="var(--accent)" />
                                                 </div>
                                             )}
                                         </div>
 
                                         <div style={{ flex: 1, minWidth: 0 }}>
-                                            <h3 className="serif" style={{ fontSize: '1.1rem', fontWeight: 500, margin: '0 0 0.3rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{place.name}</h3>
-                                            <p style={{ fontSize: '0.6rem', color: '#8A8478', margin: '0 0 0.6rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                            <h3 className="serif" style={{ fontSize: '1.1rem', fontWeight: 500, margin: '0 0 0.3rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--card-text)' }}>{place.name}</h3>
+                                            <p style={{ fontSize: '0.6rem', color: 'var(--card-text-secondary)', margin: '0 0 0.6rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                                                 <MapPin size={11} /> {place.city}
                                             </p>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                                <span style={{ fontSize: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9B3A4A', fontWeight: 600 }}>
+                                                <span style={{ fontSize: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent)', fontWeight: 600 }}>
                                                     {CATEGORY_LABELS[place.category] || place.category}
                                                 </span>
                                             </div>
@@ -129,13 +129,13 @@ const Saved = () => {
                                             }}
                                             style={{
                                                 position: 'absolute', top: '0.8rem', right: '0.8rem',
-                                                background: 'rgba(255,255,255,0.9)', borderRadius: '50%',
+                                                background: 'var(--heart-bg)', borderRadius: '50%',
                                                 width: '32px', height: '32px', border: 'none',
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+                                                cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                                             }}
                                         >
-                                            <Heart size={16} fill="#9B3A4A" color="#9B3A4A" />
+                                            <Heart size={16} fill="var(--accent)" color="var(--accent)" />
                                         </button>
                                     </motion.div>
                                 </Link>
@@ -149,4 +149,3 @@ const Saved = () => {
 };
 
 export default Saved;
-

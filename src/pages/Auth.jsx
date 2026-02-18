@@ -102,16 +102,17 @@ const Auth = () => {
     };
 
     const inputStyle = {
-        width: '100%', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)',
-        borderRadius: '12px', padding: '1rem', color: '#1A1A1A', fontSize: '0.95rem',
+        width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: '12px', padding: '1rem', color: 'var(--text-primary)', fontSize: '0.95rem',
         outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.3s ease',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.03)'
+        backdropFilter: 'blur(8px)'
     };
 
     return (
         <div style={{
-            background: '#F7F2EE', minHeight: '100vh', overflowY: 'auto',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+            minHeight: '100vh', overflowY: 'auto',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            position: 'relative', zIndex: 1
         }}>
             <div style={{ width: '100%', maxWidth: '380px', padding: '3rem 2rem' }}>
 
@@ -119,23 +120,23 @@ const Auth = () => {
                 <motion.header initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
                     style={{ textAlign: 'center', marginBottom: view === 'login' ? '2.5rem' : '1.5rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1.2rem' }}>
-                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.6rem', fontWeight: 300, letterSpacing: '0.4em', textTransform: 'uppercase', color: '#9B3A4A', lineHeight: 1 }}>THE</span>
-                        <div style={{ width: '36px', height: '1px', background: 'linear-gradient(90deg, transparent, #C4956A, transparent)', margin: '4px 0' }} />
-                        <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#1A1A1A', lineHeight: 1 }}>LIST</span>
+                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.6rem', fontWeight: 300, letterSpacing: '0.4em', textTransform: 'uppercase', color: 'var(--accent)', lineHeight: 1 }}>THE</span>
+                        <div style={{ width: '36px', height: '1px', background: 'linear-gradient(90deg, transparent, var(--accent), transparent)', margin: '4px 0' }} />
+                        <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--text-primary)', lineHeight: 1 }}>LIST</span>
                     </div>
                     {view === 'verify' ? (
-                        <h1 className="serif" style={{ fontSize: '1.5rem', fontWeight: 400, color: '#1A1A1A', margin: 0 }}>Verifica Identità</h1>
+                        <h1 className="serif" style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--text-primary)', margin: 0 }}>Verifica Identità</h1>
                     ) : (
-                        <p style={{ fontSize: '0.6rem', letterSpacing: '0.35em', textTransform: 'uppercase', color: '#B5AEA5', fontStyle: 'italic', fontFamily: 'var(--font-serif)' }}>selected.</p>
+                        <p style={{ fontSize: '0.6rem', letterSpacing: '0.35em', textTransform: 'uppercase', color: 'var(--text-muted)', fontStyle: 'italic', fontFamily: 'var(--font-serif)' }}>selected.</p>
                     )}
                 </motion.header>
 
                 <AnimatePresence mode="wait">
                     {view === 'verify' ? (
                         <motion.div key="verify" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-                            <p style={{ textAlign: 'center', fontSize: '0.7rem', color: '#8A8478', marginBottom: '2rem', lineHeight: 1.6 }}>
+                            <p style={{ textAlign: 'center', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2rem', lineHeight: 1.6 }}>
                                 Codice a 6 cifre inviato a:<br />
-                                <span style={{ color: '#9B3A4A', fontWeight: 600 }}>{email}</span>
+                                <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{email}</span>
                             </p>
                             <form onSubmit={handleVerifyOtp}>
                                 <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', marginBottom: '2rem' }}>
@@ -145,11 +146,11 @@ const Auth = () => {
                                             onChange={(e) => handleOtpChange(idx, e.target.value)}
                                             onKeyDown={(e) => handleKeyDown(idx, e)}
                                             style={{
-                                                width: '42px', height: '52px', background: '#FFFFFF',
-                                                border: digit ? '1.5px solid #9B3A4A' : '1px solid rgba(0,0,0,0.08)',
+                                                width: '42px', height: '52px', background: 'rgba(255,255,255,0.06)',
+                                                border: digit ? '1.5px solid var(--accent)' : '1px solid rgba(255,255,255,0.1)',
                                                 borderRadius: '10px', textAlign: 'center', fontSize: '1.4rem',
-                                                color: '#1A1A1A', fontFamily: 'var(--font-serif)', outline: 'none',
-                                                transition: 'all 0.3s ease', boxShadow: '0 1px 4px rgba(0,0,0,0.03)'
+                                                color: 'var(--text-primary)', fontFamily: 'var(--font-serif)', outline: 'none',
+                                                transition: 'all 0.3s ease', backdropFilter: 'blur(8px)'
                                             }}
                                         />
                                     ))}
@@ -160,12 +161,12 @@ const Auth = () => {
                                 </button>
                                 <div style={{ textAlign: 'center', marginTop: '1.2rem' }}>
                                     <button type="button" onClick={handleResendOtp} disabled={resendTimer > 0 || loading}
-                                        style={{ background: 'none', border: 'none', color: '#9B3A4A', fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: resendTimer > 0 ? 'default' : 'pointer', opacity: resendTimer > 0 ? 0.3 : 0.7 }}>
+                                        style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: resendTimer > 0 ? 'default' : 'pointer', opacity: resendTimer > 0 ? 0.3 : 0.7 }}>
                                         {resendTimer > 0 ? `Nuovo codice in ${resendTimer}s` : 'Invia di nuovo'}
                                     </button>
                                 </div>
                                 <button type="button" onClick={() => setView('signup')}
-                                    style={{ background: 'none', border: 'none', color: '#8A8478', fontSize: '0.55rem', letterSpacing: '0.15em', textTransform: 'uppercase', width: '100%', marginTop: '2rem', cursor: 'pointer' }}>
+                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.55rem', letterSpacing: '0.15em', textTransform: 'uppercase', width: '100%', marginTop: '2rem', cursor: 'pointer' }}>
                                     Modifica Dati
                                 </button>
                             </form>
@@ -188,8 +189,8 @@ const Auth = () => {
                                         </div>
                                         <div>
                                             <input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} required
-                                                style={{ ...inputStyle, color: birthday ? '#1A1A1A' : '#B5AEA5' }} />
-                                            <span style={{ fontSize: '0.5rem', color: '#B5AEA5', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '4px', display: 'block', paddingLeft: '4px' }}>Data di Nascita</span>
+                                                style={{ ...inputStyle, color: birthday ? 'var(--text-primary)' : 'var(--text-muted)' }} />
+                                            <span style={{ fontSize: '0.5rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '4px', display: 'block', paddingLeft: '4px' }}>Data di Nascita</span>
                                         </div>
                                     </>
                                 )}
@@ -199,7 +200,7 @@ const Auth = () => {
                                 <div style={{ position: 'relative' }}>
                                     <input type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required style={inputStyle} />
                                     <button type="button" onClick={() => setShowPassword(!showPassword)}
-                                        style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#9B3A4A', fontSize: '0.55rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 600 }}>
+                                        style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--accent)', fontSize: '0.55rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 600 }}>
                                         {showPassword ? 'Nascondi' : 'Mostra'}
                                     </button>
                                 </div>
@@ -209,16 +210,16 @@ const Auth = () => {
                                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.7rem', cursor: 'pointer' }} onClick={() => setMarketingAccepted(!marketingAccepted)}>
                                             <div style={{
                                                 width: '18px', height: '18px', borderRadius: '4px',
-                                                border: marketingAccepted ? 'none' : '1.5px solid rgba(0,0,0,0.12)',
-                                                background: marketingAccepted ? '#9B3A4A' : '#FFFFFF',
+                                                border: marketingAccepted ? 'none' : '1.5px solid rgba(255,255,255,0.15)',
+                                                background: marketingAccepted ? 'var(--accent)' : 'rgba(255,255,255,0.06)',
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                 marginTop: '1px', flexShrink: 0, transition: 'all 0.2s ease'
                                             }}>
                                                 {marketingAccepted && <span style={{ color: '#fff', fontSize: '10px' }}>✓</span>}
                                             </div>
-                                            <p style={{ fontSize: '0.6rem', color: '#8A8478', lineHeight: 1.5 }}>Desidero ricevere comunicazioni esclusive e aggiornamenti.</p>
+                                            <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>Desidero ricevere comunicazioni esclusive e aggiornamenti.</p>
                                         </div>
-                                        <p style={{ fontSize: '0.5rem', color: '#B5AEA5', textAlign: 'center', marginTop: '0.8rem' }}>Premendo Iscriviti, accetti i Termini e la Privacy Policy.</p>
+                                        <p style={{ fontSize: '0.5rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.8rem' }}>Premendo Iscriviti, accetti i Termini e la Privacy Policy.</p>
                                     </div>
                                 )}
 
@@ -234,13 +235,13 @@ const Auth = () => {
                             {/* Social */}
                             <div style={{ marginTop: '2rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                                    <div style={{ flex: 1, height: '1px', background: 'rgba(0,0,0,0.06)' }} />
-                                    <span style={{ fontSize: '0.5rem', letterSpacing: '0.15em', color: '#B5AEA5', textTransform: 'uppercase' }}>oppure</span>
-                                    <div style={{ flex: 1, height: '1px', background: 'rgba(0,0,0,0.06)' }} />
+                                    <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+                                    <span style={{ fontSize: '0.5rem', letterSpacing: '0.15em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>oppure</span>
+                                    <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
                                     <button onClick={() => handleSocialLogin('google')}
-                                        style={{ width: '48px', height: '48px', borderRadius: '50%', border: '1px solid rgba(0,0,0,0.08)', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}>
+                                        style={{ width: '48px', height: '48px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.3s ease', backdropFilter: 'blur(8px)' }}>
                                         <svg width="20" height="20" viewBox="0 0 24 24">
                                             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                                             <path d="M12 23c3.15 0 5.8-1.05 7.73-2.85l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C4.1 20.59 7.83 23 12 23z" fill="#34A853" />
@@ -249,8 +250,8 @@ const Auth = () => {
                                         </svg>
                                     </button>
                                     <button onClick={() => handleSocialLogin('apple')}
-                                        style={{ width: '48px', height: '48px', borderRadius: '50%', border: '1px solid rgba(0,0,0,0.08)', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}>
-                                        <svg width="20" height="20" viewBox="0 0 256 315" fill="#1A1A1A">
+                                        style={{ width: '48px', height: '48px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.3s ease', backdropFilter: 'blur(8px)' }}>
+                                        <svg width="20" height="20" viewBox="0 0 256 315" fill="#FFF5EE">
                                             <path d="M213.803 167.03c.442 47.58 41.74 63.413 42.197 63.615-.335 1.01-6.585 22.568-21.714 44.62-13.079 19.036-26.56 38.016-47.852 38.396-21.037.388-27.733-12.423-51.728-12.423-23.99 0-31.427 12.037-51.356 12.821-20.67.764-36.22-20.63-49.385-39.638-26.93-38.916-47.513-110.126-19.952-157.925 13.682-23.712 38.084-38.744 64.66-39.117 20.3-.306 39.46 13.784 51.933 13.784 12.488 0 35.632-17.16 60.106-14.67 10.237.424 39.04 4.135 57.5 31.182-1.493.92-34.35 20.012-33.91 59.35zM176.533 40.584c11.082-13.433 18.534-32.09 16.5-50.714-15.992.645-35.352 10.662-46.852 24.088-10.324 11.916-19.412 30.932-17.02 49.19 17.844 1.392 36.295-9.13 47.372-22.564z" />
                                         </svg>
                                     </button>
@@ -259,7 +260,7 @@ const Auth = () => {
 
                             <div style={{ marginTop: '2rem', textAlign: 'center' }}>
                                 <button onClick={() => setView(view === 'login' ? 'signup' : 'login')}
-                                    style={{ background: 'none', border: 'none', color: '#9B3A4A', fontSize: '0.6rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 600 }}>
+                                    style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '0.6rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 600 }}>
                                     {view === 'login' ? "Registrati" : "Accedi"}
                                 </button>
                             </div>
