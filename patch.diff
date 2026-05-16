@@ -1,0 +1,70 @@
+﻿diff --git a/src/App.jsx b/src/App.jsx
+index a4ca2ef..cf3eac8 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -43,35 +43,37 @@ const AppContent = ({ session, isSearchOpen, setIsSearchOpen }) => {
+ 
+     return (
+         <div className="app-shell" style={{ background: 'transparent' }}>
+-            {/* Animated Background Blobs */}
+-            <div className="animated-bg">
+-                <div className="blob blob-1" />
+-                <div className="blob blob-2" />
+-                <div className="blob blob-3" />
++            <div className="luxury-container">
++                {/* Animated Background Blobs */}
++                <div className="animated-bg">
++                    <div className="blob blob-1" />
++                    <div className="blob blob-2" />
++                    <div className="blob blob-3" />
++                </div>
++                <Routes>
++                    {/* Public Routes */}
++                    <Route path="/" element={<Home session={session} />} />
++                    <Route path="/place/:id" element={<PlaceDetails session={session} />} />
++                    <Route path="/nearby" element={<NearbyPlaces />} />
++                    <Route path="/map" element={<FullMap />} />
++
++                    {/* User Profile / Saved */}
++                    <Route path="/saved" element={session ? <Saved session={session} /> : <Navigate to="/login" />} />
++                    <Route path="/profile" element={session ? <Profile session={session} /> : <Navigate to="/login" />} />
++
++                    {/* Auth */}
++                    <Route path="/login" element={!session ? <Auth /> : <Navigate to="/" />} />
++
++                    {/* Admin Routes - Managed Studio */}
++                    <Route path="/admin" element={<AdminWrapper />}>
++                        <Route index element={<TheVault />} />
++                        <Route path="team" element={<Team />} />
++                    </Route>
++
++                    {/* Fallback */}
++                    <Route path="*" element={<Navigate to="/" />} />
++                </Routes>
+             </div>
+-            <Routes>
+-                {/* Public Routes */}
+-                <Route path="/" element={<Home session={session} />} />
+-                <Route path="/place/:id" element={<PlaceDetails session={session} />} />
+-                <Route path="/nearby" element={<NearbyPlaces />} />
+-                <Route path="/map" element={<FullMap />} />
+-
+-                {/* User Profile / Saved */}
+-                <Route path="/saved" element={session ? <Saved session={session} /> : <Navigate to="/login" />} />
+-                <Route path="/profile" element={session ? <Profile session={session} /> : <Navigate to="/login" />} />
+-
+-                {/* Auth */}
+-                <Route path="/login" element={!session ? <Auth /> : <Navigate to="/" />} />
+-
+-                {/* Admin Routes - Managed Studio */}
+-                <Route path="/admin" element={<AdminWrapper />}>
+-                    <Route index element={<TheVault />} />
+-                    <Route path="team" element={<Team />} />
+-                </Route>
+-
+-                {/* Fallback */}
+-                <Route path="*" element={<Navigate to="/" />} />
+-            </Routes>
+ 
+             <SearchOverlay
+                 isOpen={isSearchOpen}

@@ -12,6 +12,8 @@ import Profile from './pages/Profile';
 import Saved from './pages/Saved';
 import NearbyPlaces from './pages/NearbyPlaces';
 import FullMap from './pages/FullMap';
+import Select from './pages/Select';
+
 
 // Admin Pages
 import AdminLayout from './pages/admin/AdminLayout';
@@ -35,6 +37,8 @@ const AppContent = ({ session, isSearchOpen, setIsSearchOpen }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const isAdminRoute = location.pathname.startsWith('/admin');
+        const isSelectRoute = location.pathname.startsWith('/select') || location.pathname === '/mirabella';
+
 
     const handleGlobalSearch = (query) => {
         // Navigate to /nearby with search query without reloading
@@ -44,17 +48,23 @@ const AppContent = ({ session, isSearchOpen, setIsSearchOpen }) => {
     return (
         <div className="app-shell" style={{ background: 'transparent' }}>
             {/* Animated Background Blobs */}
-            <div className="animated-bg">
-                <div className="blob blob-1" />
-                <div className="blob blob-2" />
-                <div className="blob blob-3" />
-            </div>
+            {!isAdminRoute && !isSelectRoute && (
+                <div className="animated-bg">
+                    <div className="blob blob-1" />
+                    <div className="blob blob-2" />
+                    <div className="blob blob-3" />
+                </div>
+            )}
+
             <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<Home session={session} />} />
                 <Route path="/place/:id" element={<PlaceDetails session={session} />} />
                 <Route path="/nearby" element={<NearbyPlaces />} />
                 <Route path="/map" element={<FullMap />} />
+                <Route path="/select/lorenzo-mirabella" element={<Select />} />
+                <Route path="/mirabella" element={<Select />} />
+
 
                 {/* User Profile / Saved */}
                 <Route path="/saved" element={session ? <Saved session={session} /> : <Navigate to="/login" />} />
@@ -79,7 +89,8 @@ const AppContent = ({ session, isSearchOpen, setIsSearchOpen }) => {
                 onSearch={handleGlobalSearch}
             />
 
-            {!isAdminRoute && (
+            {!isAdminRoute && !isSelectRoute && (
+
                 <BottomNav
                     session={session}
                     isSearchOpen={isSearchOpen}

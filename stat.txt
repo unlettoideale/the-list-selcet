@@ -1,0 +1,27 @@
+﻿commit fbe8768303ca6e2b0ae94d2905b868ce98f415d6
+Author: unlettoideale <unlettoideale@users.noreply.github.com>
+Date:   Wed Feb 18 22:16:31 2026 +0100
+
+    feat: migrate to MapLibre GL JS with luxury markers, clustering and performance optimizations
+
+ .env.check                       |     2 +
+ .gitignore                       |     2 +
+ fix_env.ps1                      |    23 +
+ package-lock.json                | 11306 ++++++++++++++++++++++++++++---------
+ package.json                     |     2 +
+ src/App.jsx                      |    25 +-
+ src/components/BottomNav.jsx     |   178 +-
+ src/components/PerfMonitor.jsx   |   156 +
+ src/components/SearchOverlay.jsx |     8 +-
+ src/context/ThemeContext.jsx     |    36 +
+ src/index.css                    |   514 +-
+ src/lib/mapSetup.js              |   108 +
+ src/lib/supabase.js              |    16 +-
+ src/pages/Auth.jsx               |    65 +-
+ src/pages/FullMap.jsx            |   479 +-
+ src/pages/Home.jsx               |   214 +-
+ src/pages/NearbyPlaces.jsx       |   258 +-
+ src/pages/PlaceDetails.jsx       |    14 +-
+ src/pages/Profile.jsx            |   119 +-
+ src/pages/Saved.jsx              |    41 +-
+ 20 files changed, 10383 insertions(+), 3183 deletions(-)

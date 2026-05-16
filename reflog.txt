@@ -1,0 +1,19 @@
+﻿c940d3e HEAD@{0}: commit: fix: re-add luxury-container for layout centering on main
+fbe8768 HEAD@{1}: reset: moving to origin/main
+6d4ca19 HEAD@{2}: reset: moving to 6d4ca19f23d2c26972bdf29bdd707e6ddb14145c
+fbe8768 HEAD@{3}: checkout: moving from 6d4ca19f23d2c26972bdf29bdd707e6ddb14145c to main
+6d4ca19 HEAD@{4}: checkout: moving from main to 6d4ca19f23d2c26972bdf29bdd707e6ddb14145c
+fbe8768 HEAD@{5}: reset: moving to origin/main
+e16782b HEAD@{6}: revert: Revert "feat: migrate to MapLibre GL JS with luxury markers, clustering and performance optimizations"
+5222843 HEAD@{7}: revert: Revert "fix: riaggiunto contenitore max-width 450px allo schermo di base per prevenire il problema su desktop"
+56b55a5 HEAD@{8}: commit: fix: riaggiunto contenitore max-width 450px allo schermo di base per prevenire il problema su desktop
+fbe8768 HEAD@{9}: commit: feat: migrate to MapLibre GL JS with luxury markers, clustering and performance optimizations
+6d4ca19 HEAD@{10}: pull: Fast-forward
+c2362d0 HEAD@{11}: commit: Restore homepage with Google Maps and expandable map
+ad530a5 HEAD@{12}: commit: Rename community member role to STANDARD
+7ac938a HEAD@{13}: commit: Social Community dashboard and mobile auth fixes
+8f2d0e5 HEAD@{14}: pull origin main: Fast-forward
+d6fd545 HEAD@{15}: commit: Add vercel.json for routing fix
+f5e063a HEAD@{16}: commit: Activation of environment variables
+5673692 HEAD@{17}: Branch: renamed refs/heads/main to refs/heads/main
+5673692 HEAD@{19}: commit (initial): Initial automated commit

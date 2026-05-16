@@ -1,0 +1,10 @@
+﻿56b55a5 fix: riaggiunto contenitore max-width 450px allo schermo di base per prevenire il problema su desktop
+fbe8768 feat: migrate to MapLibre GL JS with luxury markers, clustering and performance optimizations
+6d4ca19 Update DB categories, server-side pagination, and new seed data
+c2362d0 Restore homepage with Google Maps and expandable map
+ad530a5 Rename community member role to STANDARD
+7ac938a Social Community dashboard and mobile auth fixes
+8f2d0e5 Admin Vault enhancement: direct upload, map autocomplete, and UI polish
+d6fd545 Add vercel.json for routing fix
+f5e063a Activation of environment variables
+5673692 Initial automated commit
